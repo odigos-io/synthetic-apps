@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   labels:
     app: versionlatest
-    (odigos.io/agents-meta-hash != null): true
+    ('odigos.io/agents-meta-hash' != null): true
   namespace: nodejs
 spec:
   containers:
@@ -24,6 +24,7 @@ metadata:
     app: versionlatest
   namespace: nodejs
 status:
+  observedGeneration: 2
   replicas: 1
   updatedReplicas: 1
   readyReplicas: 1
@@ -34,7 +35,7 @@ kind: Pod
 metadata:
   labels:
     app: versionminimum
-    (odigos.io/agents-meta-hash != null): true
+    ('odigos.io/agents-meta-hash' != null): true
   namespace: nodejs
 spec:
   containers:
@@ -55,6 +56,7 @@ metadata:
     app: versionminimum
   namespace: nodejs
 status:
+  observedGeneration: 2
   replicas: 1
   updatedReplicas: 1
   readyReplicas: 1
@@ -65,7 +67,7 @@ kind: Pod
 metadata:
   labels:
     app: versionunsupported
-    (odigos.io/agents-meta-hash != null): false
+    ('odigos.io/agents-meta-hash' != null): false
   namespace: nodejs 
 spec:
   containers:
@@ -85,6 +87,7 @@ metadata:
     app: versionunsupported
   namespace: nodejs
 status:
+  observedGeneration: 1 # odigos detects unsupported version and does not rollout the deploy
   replicas: 1
   updatedReplicas: 1
   readyReplicas: 1
@@ -95,7 +98,7 @@ kind: Pod
 metadata:
   labels:
     app: versionveryold
-    (odigos.io/agents-meta-hash != null): true
+    ('odigos.io/agents-meta-hash' != null): true
   namespace: nodejs
 spec:
   containers:
@@ -116,6 +119,7 @@ metadata:
     app: versionveryold
   namespace: nodejs
 status:
+  observedGeneration: 2 # odigos rollout the deployment after instrumentation (version not collected in runtime detection)
   replicas: 1
   updatedReplicas: 1
   readyReplicas: 1
