@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: envdockerfile
-          image: nodejs-httpserver:envdockerfile
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-httpserver:envdockerfile
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

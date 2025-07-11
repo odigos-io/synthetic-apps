@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: versionminimum
-          image: nodejs-httpserver:versionminimum
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-httpserver:versionminimum
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

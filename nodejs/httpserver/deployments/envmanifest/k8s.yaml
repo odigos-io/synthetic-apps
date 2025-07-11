@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: envmanifest
-          image: nodejs-httpserver:envmanifest
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-httpserver:envmanifest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

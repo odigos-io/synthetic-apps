@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: httpserver
-          image: nodejs-httpserver:httpserver
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-httpserver:httpserver
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

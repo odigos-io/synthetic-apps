@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: versionunsupported
-          image: nodejs-httpserver:versionunsupported
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-httpserver:versionunsupported
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
