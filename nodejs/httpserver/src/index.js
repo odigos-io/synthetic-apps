@@ -33,6 +33,12 @@ app.get('/', function (req, res) {
   res.send('Hello, World!');
 });
 
+// Define a healthcheck endpoint
+app.get('/health', function (req, res) {
+  console.log('health check requested');
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Start the server and listen on port 8080
 var server = app.listen(8080, function () {
   console.log('Server running at http://127.0.0.1:8080/');
