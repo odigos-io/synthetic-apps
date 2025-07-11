@@ -1,0 +1,15 @@
+apiVersion: odigos.io/v1alpha1
+kind: Destination
+metadata:
+  name: debug
+  namespace: odigos-test
+spec:
+  data:
+    VERBOSITY: detailed
+    # uncomment next line to only sample 1 item (batch to export) per second
+    # ITEMS_PER_SECOND: '1'
+  destinationName: debug
+  signals:
+  # comment the ones you don't want to 
+  - TRACES
+  type: debug

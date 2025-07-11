@@ -1,0 +1,10 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: TraceTest
+description: This test waits for a trace from the service with compatible runtime version
+query: |
+  length([?span.serviceName == 'versionlatest']) > `0` &&
+  length([?span.serviceName == 'versionminimum']) > `0` &&
+  length([?span.serviceName == 'versionunsupported']) == `0` &&
+  length([?span.serviceName == 'versionveryold']) == `0`
+expected:
+  count: 1

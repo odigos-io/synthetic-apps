@@ -1,0 +1,194 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: workflow-lifecycle
+spec:
+  description: This e2e test runs various scenarios to test the lifecycle of the workload
+  skipDelete: true
+  steps:
+
+    - name: Download Odigos CLI
+      try:
+      - script:
+          timeout: 1m 
+          content: |
+            #!/bin/bash
+
+            # Define variables
+            REPO_URL="https://api.github.com/repos/odigos-io/odigos/releases/latest"
+            ARCH=$(uname -m) # Get the system architecture
+            OS=$(uname | tr '[:upper:]' '[:lower:]') # Get the OS name in lowercase
+
+            # Convert architecture to match GitHub naming conventions if necessary
+            if [ "$ARCH" = "x86_64" ]; then
+                ARCH="amd64"
+            elif [ "$ARCH" = "aarch64" ]; then
+                ARCH="arm64"
+            fi
+
+            # Fetch the release assets from GitHub API with retry
+            # --retry 5: retry up to 5 times
+            # --retry-delay 1: wait 1 second between retries
+            # --retry-max-time 30: maximum time to spend retrying (30 seconds)
+            ASSETS_JSON=$(curl -s --retry 5 --retry-delay 1 --retry-max-time 30 "$REPO_URL")
+
+            # Find the download URL that matches the OS and architecture
+            DOWNLOAD_URL=$(echo "$ASSETS_JSON" | grep "browser_download_url" | grep "$OS" | grep "$ARCH" | cut -d '"' -f 4)
+
+            # Check if the download URL was found
+            if [ -z "$DOWNLOAD_URL" ]; then
+                echo "No matching release found for OS: $OS and Architecture: $ARCH"
+                exit 1
+            fi
+
+            # Download the matched asset with retry
+            # --retry 5: retry up to 5 times
+            # --retry-delay 1: wait 1 second between retries
+            # --retry-max-time 60: maximum time to spend retrying (60 seconds for download)
+            curl -L -o odigos-latest.tar.gz --retry 5 --retry-delay 1 --retry-max-time 60 "$DOWNLOAD_URL"
+
+            # Extract the downloaded file
+            tar -xvzf odigos-latest.tar.gz
+
+    - name: Install Odigos
+      try:
+      - script:
+          timeout: 1m
+          content: |
+              #!/bin/bash
+              # cleanup any existing installation of odigos the might be left over from previous runs while developing
+              ./odigos uninstall --yes
+              # Run the Odigos CLI installation
+              ./odigos install --namespace odigos-test --nowait
+
+    - name: Apply Application Manifests
+      try:
+      - script:
+          content: |
+
+            # NodeJS versions
+            kubectl create namespace nodejs --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -n nodejs -f ../../nodejs/httpserver/deployments/versionlatest/k8s.yaml
+            kubectl apply -n nodejs -f ../../nodejs/httpserver/deployments/versionminimum/k8s.yaml
+            kubectl apply -n nodejs -f ../../nodejs/httpserver/deployments/versionunsupported/k8s.yaml
+            kubectl apply -n nodejs -f ../../nodejs/httpserver/deployments/versionveryold/k8s.yaml
+
+    - name: Install Simple Trace Db
+      try:
+        - apply:
+            file: ../common/apply/simple-trace-db-deployment.yaml
+
+    - name: Add Destination
+      try:
+        - apply:
+            resource:
+              apiVersion: odigos.io/v1alpha1
+              kind: Destination
+              metadata:
+                name: simple-trace-db
+                namespace: odigos-test
+              spec:
+                data:
+                  OTLP_HTTP_ENDPOINT: http://simple-trace-db.traces:4318
+                destinationName: e2e-tests
+                signals:
+                  - TRACES
+                type: otlphttp
+
+    - name: Instrument Namespace
+      try:
+        - script:
+            # before applying the source resource, we need to wait for the webhook to be ready
+            timeout: 2m
+            content: |
+              #!/bin/bash
+              set -e  # Exit immediately if any command fails
+              
+              echo "Waiting for Odigos webhook to be ready..."
+              
+              # Wait for the odigos-instrumentor pod to be ready
+              echo "Waiting for odigos-instrumentor pod to be ready..."
+              kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=odigos-instrumentor -n odigos-test --timeout=120s
+              
+              # Wait for the webhook service endpoints to exist
+              echo "Waiting for webhook service endpoints to be ready..."
+              kubectl wait --for=jsonpath='{.subsets[*].addresses[0].ip}' endpoints odigos-instrumentor -n odigos-test --timeout=120s
+              
+              # Wait for the CRD to be established
+              echo "Waiting for Source CRD to be established..."
+              kubectl wait --for=condition=established --timeout=120s crd/sources.odigos.io
+              
+              echo "Odigos webhook is ready!"
+
+        - apply:
+            resource:
+              apiVersion: odigos.io/v1alpha1
+              kind: Source
+              metadata:
+                name: nodejs-ns
+                namespace: nodejs
+              spec:
+                workload:
+                  name: nodejs
+                  namespace: nodejs
+                  kind: Namespace
+
+    - name: Assert Instrumentation Configs Created
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/ic-created.yaml
+    
+    - name: Assert Runtime Detection
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/runtimes-detected.yaml
+
+    - name: Assert Agent Enabled
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/agent-enabled.yaml
+    
+    - name: Assert Agent Injected
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/agent-injected.yaml
+    
+    - name: Call Api
+      try:
+        - assert:
+            timeout: 1m
+            file: ../common/assert/simple-trace-db-running.yaml
+        - script:
+            timeout: 30s
+            content: |
+              #!/bin/bash
+
+              # Apply the job
+              kubectl apply -f ./apply/generate-traffic.yaml
+
+              # Wait for the job to complete
+              job_name=$(kubectl get -f ./apply/generate-traffic.yaml -o=jsonpath='{.metadata.name}')
+              kubectl wait --for=condition=complete job/$job_name
+
+              # Delete the job
+              kubectl delete -f ./apply/generate-traffic.yaml
+
+    # - name: 'Wait for Traces'
+    #   try:
+    #     - script:
+    #         timeout: 2m
+    #         content: |
+    #           while true; do
+    #             ../common/assert/simple_trace_db_query_runner.sh ./quries/wait-for-trace.yaml
+    #             if [ $? -eq 0 ]; then
+    #               break
+    #             fi
+    #           done
+    #   catch:
+    #     - script:
+    #         content: |
+    #           ../common/assert/simple_trace_db_query_runner.sh ./quries/wait-for-trace.yaml --verbose

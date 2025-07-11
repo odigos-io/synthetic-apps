@@ -1,0 +1,51 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: nodejs
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionlatest
+      language: javascript
+      (runtimeVersion != null): true
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: nodejs
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionminimum
+      language: javascript
+      runtimeVersion: 14.0.0
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionunsupported
+  namespace: nodejs
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionunsupported
+      language: javascript
+      runtimeVersion: 12.13.0
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionveryold
+  namespace: nodejs
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionveryold
+      language: javascript
+      (runtimeVersion == null): true
