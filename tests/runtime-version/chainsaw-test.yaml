@@ -156,6 +156,11 @@ spec:
         - assert:
             timeout: 2m
             file: ./assert/agent-injected.yaml
+      catch:
+        - script:
+            content: |
+              kubectl get pods -n nodejs -o yaml
+              kubectl get deployments -n nodejs -o yaml
     
     - name: Call Api
       try:
