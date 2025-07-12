@@ -3,8 +3,8 @@ build:
 	docker build -f deployments/httpserver/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:httpserver .
 	docker build -f deployments/versionlatest/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:versionlatest .
 	docker build -f deployments/versionminimum/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:versionminimum .
-	docker build -f deployments/versionunsupported/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:versionunsupported .
-	docker build -f deployments/versionveryold/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:versionveryold .
+	# docker build -f deployments/versionunsupported/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:versionunsupported .
+	# docker build -f deployments/versionveryold/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:versionveryold .
 	docker build -f deployments/envdockerfile/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:envdockerfile .
 	docker build -f deployments/envmanifest/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-httpserver:envmanifest .
 	@docker images ghcr.io/odigos-io/synthetic-apps/java-httpserver:httpserver --format "{{.Size}}"
