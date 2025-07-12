@@ -28,8 +28,8 @@ var express = require('express');
 var app = express();
 
 // Define a route for the root URL that sends "Hello, World!" as the response
-app.get('/', function (req, res) {
-  console.log('got request, replying hello-world');
+app.get('/static/success', function (req, res) {
+  console.log('got request for static/success, replying hello-world');
   res.send('Hello, World!');
 });
 

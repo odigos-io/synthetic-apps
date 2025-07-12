@@ -10,5 +10,5 @@ Each application that implements the `httpserver` topology must:
 
 ## Endpoints
 
-- `/` - Returns a static `200` payload with the string `Hello, World!`
-
+- `/static/success` - Returns a static `200` payload with the string `Hello, World!`
+- `/health` - Returns a `200` to always indicate the application is healthy

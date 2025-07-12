@@ -171,29 +171,31 @@ spec:
             timeout: 30s
             content: |
               #!/bin/bash
+              set -e
 
               # Apply the job
               kubectl apply -f ./apply/generate-traffic.yaml
 
               # Wait for the job to complete
               job_name=$(kubectl get -f ./apply/generate-traffic.yaml -o=jsonpath='{.metadata.name}')
-              kubectl wait --for=condition=complete job/$job_name
+              job_namespace=$(kubectl get -f ./apply/generate-traffic.yaml -o=jsonpath='{.metadata.namespace}')
+              kubectl wait --for=condition=complete job/$job_name -n $job_namespace
 
               # Delete the job
-              kubectl delete -f ./apply/generate-traffic.yaml
+              # kubectl delete -f ./apply/generate-traffic.yaml
 
-    # - name: 'Wait for Traces'
-    #   try:
-    #     - script:
-    #         timeout: 2m
-    #         content: |
-    #           while true; do
-    #             ../common/assert/simple_trace_db_query_runner.sh ./quries/wait-for-trace.yaml
-    #             if [ $? -eq 0 ]; then
-    #               break
-    #             fi
-    #           done
-    #   catch:
-    #     - script:
-    #         content: |
-    #           ../common/assert/simple_trace_db_query_runner.sh ./quries/wait-for-trace.yaml --verbose
+    - name: 'Wait for Traces'
+      try:
+        - script:
+            timeout: 2m
+            content: |
+              while true; do
+                ../common/assert/simple_trace_db_query_runner.sh ./quries/wait-for-trace.yaml
+                if [ $? -eq 0 ]; then
+                  break
+                fi
+              done
+      catch:
+        - script:
+            content: |
+              ../common/assert/simple_trace_db_query_runner.sh ./quries/wait-for-trace.yaml --verbose
