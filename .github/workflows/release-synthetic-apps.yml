@@ -1,6 +1,7 @@
 name: Release Synthetic Apps
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
