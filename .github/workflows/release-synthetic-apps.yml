@@ -9,6 +9,7 @@ on:
       - 'nodejs/**'
       - 'python/**'
       - 'java/**'
+      - 'golang/**'
 
 permissions:
   contents: read
@@ -79,6 +80,19 @@ jobs:
             scenario: httpserver
           - deploymenttype: envmanifest
             language: java
+            scenario: httpserver
+          # Go images
+          - deploymenttype: httpserver
+            language: golang
+            scenario: httpserver
+          - deploymenttype: versionlatest
+            language: golang
+            scenario: httpserver
+          - deploymenttype: versionminimum
+            language: golang
+            scenario: httpserver
+          - deploymenttype: versionunsupported
+            language: golang
             scenario: httpserver
     runs-on: ubuntu-latest
     steps:
