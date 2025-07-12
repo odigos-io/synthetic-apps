@@ -22,7 +22,13 @@ spec:
           args:
             - |
               set -e
+              # NodeJS applications
               curl -s --fail http://versionlatest.nodejs:8080/static/success
               curl -s --fail http://versionminimum.nodejs:8080/static/success
               curl -s --fail http://versionunsupported.nodejs:8080/static/success
               curl -s --fail http://versionveryold.nodejs:8080/static/success
+              # Python applications
+              curl -s --fail http://versionlatest.python:8080/static/success
+              curl -s --fail http://versionminimum.python:8080/static/success
+              curl -s --fail http://versionunsupported.python:8080/static/success
+              curl -s --fail http://versionveryold.python:8080/static/success

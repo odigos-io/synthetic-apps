@@ -5,4 +5,4 @@ query: |
   length([?span.serviceName == 'versionlatest' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
   length([?span.serviceName == 'versionminimum' && span.spanAttributes."http.route" == '/static/success']) > `0`
 expected:
-  count: 2
+  count: 4

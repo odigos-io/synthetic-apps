@@ -49,3 +49,55 @@ status:
     - containerName: versionveryold
       language: javascript
       (runtimeVersion == null): true
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: python
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionlatest
+      language: python
+      (runtimeVersion != null): true
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: python
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionminimum
+      language: python
+      runtimeVersion: 3.8.0
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionunsupported
+  namespace: python
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionunsupported
+      language: python
+      runtimeVersion: 3.7.17
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionveryold
+  namespace: python
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionveryold
+      language: python
+      (runtimeVersion == null): true

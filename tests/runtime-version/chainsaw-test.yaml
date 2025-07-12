@@ -73,6 +73,13 @@ spec:
             kubectl apply -n nodejs -f ../../nodejs/httpserver/deployments/versionunsupported/k8s.yaml
             kubectl apply -n nodejs -f ../../nodejs/httpserver/deployments/versionveryold/k8s.yaml
 
+            # Python versions
+            kubectl create namespace python --dry-run=client -o yaml | kubectl apply -f -
+            kubectl apply -n python -f ../../python/httpserver/deployments/versionlatest/k8s.yaml
+            kubectl apply -n python -f ../../python/httpserver/deployments/versionminimum/k8s.yaml
+            kubectl apply -n python -f ../../python/httpserver/deployments/versionunsupported/k8s.yaml
+            kubectl apply -n python -f ../../python/httpserver/deployments/versionveryold/k8s.yaml
+
     - name: Install Simple Trace Db
       try:
         - apply:
@@ -132,6 +139,18 @@ spec:
                   name: nodejs
                   namespace: nodejs
                   kind: Namespace
+        - apply:
+            resource:
+              apiVersion: odigos.io/v1alpha1
+              kind: Source
+              metadata:
+                name: python-ns
+                namespace: python
+              spec:
+                workload:
+                  name: python
+                  namespace: python
+                  kind: Namespace
 
     - name: Assert Instrumentation Configs Created
       try:
@@ -161,6 +180,8 @@ spec:
             content: |
               kubectl get pods -n nodejs -o yaml
               kubectl get deployments -n nodejs -o yaml
+              kubectl get pods -n python -o yaml
+              kubectl get deployments -n python -o yaml
     
     - name: Call Api
       try:
