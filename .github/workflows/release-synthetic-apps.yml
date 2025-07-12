@@ -8,6 +8,7 @@ on:
     paths:
       - 'nodejs/**'
       - 'python/**'
+      - 'java/**'
 
 permissions:
   contents: read
@@ -63,7 +64,28 @@ jobs:
           - deploymenttype: envmanifest
             language: python
             scenario: httpserver
-    
+          # Java images
+          - deploymenttype: httpserver
+            language: java
+            scenario: httpserver
+          - deploymenttype: versionlatest
+            language: java
+            scenario: httpserver
+          - deploymenttype: versionminimum
+            language: java
+            scenario: httpserver
+          - deploymenttype: versionunsupported
+            language: java
+            scenario: httpserver
+          - deploymenttype: versionveryold
+            language: java
+            scenario: httpserver
+          - deploymenttype: envdockerfile
+            language: java
+            scenario: httpserver
+          - deploymenttype: envmanifest
+            language: java
+            scenario: httpserver
     runs-on: ubuntu-latest
     steps:
       - name: Store new version in env
