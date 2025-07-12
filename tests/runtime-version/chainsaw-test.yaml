@@ -182,7 +182,7 @@ spec:
               kubectl wait --for=condition=complete job/$job_name -n $job_namespace
 
               # Delete the job
-              # kubectl delete -f ./apply/generate-traffic.yaml
+              kubectl delete -f ./apply/generate-traffic.yaml
 
     - name: 'Wait for Traces'
       try:

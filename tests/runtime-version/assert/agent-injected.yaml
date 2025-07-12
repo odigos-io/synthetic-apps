@@ -30,6 +30,15 @@ status:
   readyReplicas: 1
   availableReplicas: 1
 ---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationInstance
+metadata:
+  namespace: nodejs
+  labels:
+    instrumented-app: deployment-versionlatest
+status:
+  healthy: true
+---
 apiVersion: v1
 kind: Pod
 metadata:
@@ -61,6 +70,15 @@ status:
   updatedReplicas: 1
   readyReplicas: 1
   availableReplicas: 1
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationInstance
+metadata:
+  namespace: nodejs
+  labels:
+    instrumented-app: deployment-versionminimum
+status:
+  healthy: true
 ---
 apiVersion: v1
 kind: Pod

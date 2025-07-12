@@ -22,7 +22,7 @@ spec:
           args:
             - |
               set -e
-              curl -s --fail http://versionlatest.nodejs:8080
-              curl -s --fail http://versionminimum.nodejs:8080
-              curl -s --fail http://versionunsupported.nodejs:8080
-              curl -s --fail http://versionveryold.nodejs:8080
+              curl -s --fail http://versionlatest.nodejs:8080/static/success
+              curl -s --fail http://versionminimum.nodejs:8080/static/success
+              curl -s --fail http://versionunsupported.nodejs:8080/static/success
+              curl -s --fail http://versionveryold.nodejs:8080/static/success
