@@ -32,3 +32,6 @@ spec:
               curl -s --fail http://versionminimum.python:8080/static/success
               curl -s --fail http://versionunsupported.python:8080/static/success
               curl -s --fail http://versionveryold.python:8080/static/success
+              # Java applications
+              curl -s --fail http://versionlatest.java:8080/static/success
+              curl -s --fail http://versionminimum.java:8080/static/success

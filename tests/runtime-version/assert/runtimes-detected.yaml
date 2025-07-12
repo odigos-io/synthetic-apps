@@ -101,3 +101,29 @@ status:
     - containerName: versionveryold
       language: python
       (runtimeVersion == null): true
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: java
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionlatest
+      language: java
+      (runtimeVersion != null): true
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: java
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionminimum
+      language: java
+      # Java 8 images do not include the JAVA_VERSION in the base image, so we don't have it here.

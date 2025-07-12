@@ -117,3 +117,33 @@ spec:
 status:
   (conditions[?type == 'AgentEnabled']):
     - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: java
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionlatest
+      agentEnabled: True
+      otelDistroName: java-community
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: java
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionminimum
+      agentEnabled: True
+      otelDistroName: java-community
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'
