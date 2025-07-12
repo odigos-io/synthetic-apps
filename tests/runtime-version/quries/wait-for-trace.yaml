@@ -7,6 +7,8 @@ query: |
   length([?span.serviceName == 'versionlatest' && span.resourceAttributes."k8s.namespace.name" == 'python' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
   length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'python' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
   length([?span.serviceName == 'versionlatest' && span.resourceAttributes."k8s.namespace.name" == 'java' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
-  length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'java' && span.spanAttributes."http.route" == '/static/success']) > `0`
+  length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'java' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
+  length([?span.serviceName == 'versionlatest' && span.resourceAttributes."k8s.namespace.name" == 'golang' && span.spanAttributes."url.path" == '/static/success']) > `0` ||
+  length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'golang' && span.spanAttributes."url.path" == '/static/success']) > `0`
 expected:
-  count: 6
+  count: 8

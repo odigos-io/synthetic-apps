@@ -35,3 +35,6 @@ spec:
               # Java applications
               curl -s --fail http://versionlatest.java:8080/static/success
               curl -s --fail http://versionminimum.java:8080/static/success
+              # Go applications
+              curl -s --fail http://versionlatest.golang:8080/static/success
+              curl -s --fail http://versionminimum.golang:8080/static/success
