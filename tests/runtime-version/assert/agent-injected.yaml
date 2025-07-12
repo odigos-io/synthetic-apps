@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
+  (contains(keys(labels), 'odigos.io/agents-meta-hash')): true
   labels:
     app: versionlatest
-    ('odigos.io/agents-meta-hash' != null): true
   namespace: nodejs
 spec:
   containers:
@@ -42,9 +42,9 @@ status:
 apiVersion: v1
 kind: Pod
 metadata:
+  (contains(keys(labels), 'odigos.io/agents-meta-hash')): true
   labels:
     app: versionminimum
-    ('odigos.io/agents-meta-hash' != null): true
   namespace: nodejs
 spec:
   containers:
@@ -83,9 +83,9 @@ status:
 apiVersion: v1
 kind: Pod
 metadata:
+  (contains(keys(labels), 'odigos.io/agents-meta-hash')): false
   labels:
     app: versionunsupported
-    ('odigos.io/agents-meta-hash' != null): false
   namespace: nodejs 
 spec:
   containers:
@@ -114,9 +114,9 @@ status:
 apiVersion: v1
 kind: Pod
 metadata:
+  (contains(keys(labels), 'odigos.io/agents-meta-hash')): true
   labels:
     app: versionveryold
-    ('odigos.io/agents-meta-hash' != null): true
   namespace: nodejs
 spec:
   containers:
