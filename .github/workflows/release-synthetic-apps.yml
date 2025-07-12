@@ -74,12 +74,6 @@ jobs:
           - deploymenttype: versionminimum
             language: java
             scenario: httpserver
-        #   - deploymenttype: versionunsupported
-        #     language: java
-        #     scenario: httpserver
-        #   - deploymenttype: versionveryold
-        #     language: java
-        #     scenario: httpserver
           - deploymenttype: envdockerfile
             language: java
             scenario: httpserver

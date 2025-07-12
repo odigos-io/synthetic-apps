@@ -26,10 +26,10 @@ A minimal Spring Boot HTTP server implementation following the same pattern as t
 | `httpserver` | Standard deployment | Java 8 |
 | `versionlatest` | Latest version | Java 8 (limited by ARM64 Alpine support) |
 | `versionminimum` | Minimum supported version | Java 8 |
-| `versionveryold` | Very old version | Java 8 (with environment variable) |
-| `versionunsupported` | Unsupported version | Java 8 |
 | `envdockerfile` | Environment variables in Dockerfile | Java 8 |
 | `envmanifest` | Environment variables in Kubernetes manifest | Java 8 |
+
+> **Note:** Java 8, released in 2014, is the minimum version supported by OpenTelemetry. Creating applications with older Java versions is not practical or supported, so only Java 8 and newer are included here.
 
 ## Building
 
@@ -99,8 +99,6 @@ java/httpserver/
 │   ├── httpserver/
 │   ├── versionlatest/
 │   ├── versionminimum/
-│   ├── versionveryold/
-│   ├── versionunsupported/
 │   ├── envdockerfile/
 │   └── envmanifest/
 ├── pom.xml
