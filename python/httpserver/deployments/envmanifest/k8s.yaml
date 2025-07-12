@@ -1,0 +1,53 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: envmanifest
+  labels:
+    app: envmanifest
+spec:
+  selector:
+    matchLabels:
+      app: envmanifest
+  template:
+    metadata:
+      labels:
+        app: envmanifest
+    spec:
+      containers:
+        - name: envmanifest
+          image: ghcr.io/odigos-io/synthetic-apps/python-httpserver:envmanifest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: envmanifest
+spec:
+  selector:
+    app: envmanifest
+  ports:
+    - protocol: TCP
+      port: 8080 

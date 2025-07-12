@@ -1,0 +1,48 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: versionminimum
+  labels:
+    app: versionminimum
+spec:
+  selector:
+    matchLabels:
+      app: versionminimum
+  template:
+    metadata:
+      labels:
+        app: versionminimum
+    spec:
+      containers:
+        - name: versionminimum
+          image: ghcr.io/odigos-io/synthetic-apps/python-httpserver:versionminimum
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: versionminimum
+spec:
+  selector:
+    app: versionminimum
+  ports:
+    - protocol: TCP
+      port: 8080 

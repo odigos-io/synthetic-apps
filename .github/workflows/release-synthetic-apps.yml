@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'nodejs/**'
+      - 'python/**'
 
 permissions:
   contents: read
@@ -17,13 +18,51 @@ jobs:
     strategy:
       matrix:
         include:
+          # Node.js images
           - deploymenttype: httpserver
+            language: nodejs
+            scenario: httpserver
           - deploymenttype: versionlatest
+            language: nodejs
+            scenario: httpserver
           - deploymenttype: versionminimum
+            language: nodejs
+            scenario: httpserver
           - deploymenttype: versionunsupported
+            language: nodejs
+            scenario: httpserver
           - deploymenttype: versionveryold
+            language: nodejs
+            scenario: httpserver
           - deploymenttype: envdockerfile
+            language: nodejs
+            scenario: httpserver
           - deploymenttype: envmanifest
+            language: nodejs
+            scenario: httpserver
+          # Python images
+          - deploymenttype: httpserver
+            language: python
+            scenario: httpserver
+          - deploymenttype: versionlatest
+            language: python
+            scenario: httpserver
+          - deploymenttype: versionminimum
+            language: python
+            scenario: httpserver
+          - deploymenttype: versionunsupported
+            language: python
+            scenario: httpserver
+          - deploymenttype: versionveryold
+            language: python
+            scenario: httpserver
+          - deploymenttype: envdockerfile
+            language: python
+            scenario: httpserver
+          - deploymenttype: envmanifest
+            language: python
+            scenario: httpserver
+    
     runs-on: ubuntu-latest
     steps:
       - name: Store new version in env
@@ -51,7 +90,7 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/nodejs-httpserver:${{ matrix.deploymenttype }}
+            ghcr.io/${{ github.repository }}/${{ matrix.language }}-${{ matrix.scenario }}:${{ matrix.deploymenttype }}
           platforms: linux/amd64,linux/arm64
-          file: nodejs/httpserver/deployments/${{ matrix.deploymenttype }}/Dockerfile
-          context: nodejs/httpserver 
+          file: ${{ matrix.language }}/${{ matrix.scenario }}/deployments/${{ matrix.deploymenttype }}/Dockerfile
+          context: ${{ matrix.language }}/${{ matrix.scenario }}
