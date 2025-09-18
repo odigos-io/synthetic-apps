@@ -1,0 +1,33 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: loadgen-collector-sender
+  labels:
+    app: loadgen-collector-sender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadgen-collector-sender
+  template:
+    metadata:
+      labels:
+        app: loadgen-collector-sender
+    spec:
+      containers:
+        - name: loadgen-collector-sender
+          image: ghcr.io/odigos-io/synthetic-apps/loadgen-default:collector-sender
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: 'http://odigos-data-collection-local-traffic.odigos-system:4317'
+            - name: NUM_OF_EXPORTERS
+              value: '1'
+            - name: ATTRIBUTES_PER_SPAN
+              value: '20'
+            - name: BIG_ATTRIBUTE_SIZE_CHARS
+              value: '10000'
+            - name: SPANS_PER_BATCH
+              value: '2048'
+            - name: BATCHES_PER_SECOND
+              value: '1'
