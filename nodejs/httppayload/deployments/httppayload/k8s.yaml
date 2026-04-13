@@ -1,0 +1,51 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: httppayload
+  labels:
+    app: httppayload
+spec:
+  selector:
+    matchLabels:
+      app: httppayload
+  template:
+    metadata:
+      labels:
+        app: httppayload
+    spec:
+      containers:
+        - name: httppayload
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-httppayload:httppayload
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SELF_HOST
+              value: "localhost"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: httppayload
+spec:
+  selector:
+    app: httppayload
+  ports:
+    - protocol: TCP
+      port: 8080
