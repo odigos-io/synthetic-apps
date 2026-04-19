@@ -1,0 +1,33 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: head-sampling-rules
+spec:
+  name: head-sampling test rules
+  notes: >-
+    Sampling rules for the head-sampling synthetic app.
+    /sampling/percentage/no-rule is intentionally left without any matching rule to test default behavior.
+  noisyOperations:
+    - name: sampled-0
+      notes: Explicit 0% sampling - all traces for this endpoint should be dropped
+      percentageAtMost: 0
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-0
+    - name: sampled-50
+      notes: 50% sampling - roughly half the traces for this endpoint should be kept
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-50
+    - name: sampled-100
+      notes: 100% sampling - all traces for this endpoint should be kept
+      percentageAtMost: 100
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-100
+    - name: sampled-fallback
+      notes: No percentageAtMost set - falls back to default 0%
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-fallback
