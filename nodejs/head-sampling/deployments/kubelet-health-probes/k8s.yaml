@@ -1,33 +1,42 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: head-sampling
+  name: kubelet-health-probes
   labels:
-    app: head-sampling
+    app: kubelet-health-probes
 spec:
   selector:
     matchLabels:
-      app: head-sampling
+      app: kubelet-health-probes
   template:
     metadata:
       labels:
-        app: head-sampling
+        app: kubelet-health-probes
     spec:
       containers:
-        - name: head-sampling
+        - name: kubelet-health-probes
           image: ghcr.io/odigos-io/synthetic-apps/nodejs-head-sampling:head-sampling
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          env:
+            - name: SIMULATE_STARTUP_DELAY
+              value: "true"
+          startupProbe:
+            httpGet:
+              path: /healthz/startup
+              port: 8080
+            periodSeconds: 1
+            failureThreshold: 20
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /healthz/ready
               port: 8080
             periodSeconds: 2
-            failureThreshold: 3
+            failureThreshold: 10
           livenessProbe:
             httpGet:
-              path: /healthz
+              path: /healthz/live
               port: 8080
             periodSeconds: 10
             failureThreshold: 3
@@ -35,10 +44,10 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: head-sampling
+  name: kubelet-health-probes
 spec:
   selector:
-    app: head-sampling
+    app: kubelet-health-probes
   ports:
     - protocol: TCP
       port: 8080

@@ -4,10 +4,14 @@ var app = express();
 var PORT = 8080;
 
 var startTime = Date.now();
+var SIMULATE_STARTUP_DELAY = process.env.SIMULATE_STARTUP_DELAY === 'true';
 var STARTUP_DELAY_MS = 10000;
 var READY_DELAY_MS = 12000;
 
 app.get('/healthz/startup', function (req, res) {
+  if (!SIMULATE_STARTUP_DELAY) {
+    return res.status(200).json({ status: 'started', simulated: false });
+  }
   var elapsed = Date.now() - startTime;
   if (elapsed >= STARTUP_DELAY_MS) {
     res.status(200).json({ status: 'started', elapsed_ms: elapsed });
@@ -17,6 +21,9 @@ app.get('/healthz/startup', function (req, res) {
 });
 
 app.get('/healthz/ready', function (req, res) {
+  if (!SIMULATE_STARTUP_DELAY) {
+    return res.status(200).json({ status: 'ready', simulated: false });
+  }
   var elapsed = Date.now() - startTime;
   if (elapsed >= READY_DELAY_MS) {
     res.status(200).json({ status: 'ready', elapsed_ms: elapsed });
@@ -27,6 +34,10 @@ app.get('/healthz/ready', function (req, res) {
 
 app.get('/healthz/live', function (req, res) {
   res.status(200).json({ status: 'alive' });
+});
+
+app.get('/healthz', function (req, res) {
+  res.status(200).json({ status: 'healthy' });
 });
 
 // No sampling rule targets this endpoint — traces are subject to the default pipeline behavior
@@ -56,8 +67,12 @@ app.get('/sampling/percentage/sampled-fallback', function (req, res) {
 
 var server = app.listen(PORT, function () {
   console.log('head-sampling server running at http://127.0.0.1:' + PORT + '/');
-  console.log('Startup probe will pass after ' + (STARTUP_DELAY_MS / 1000) + 's');
-  console.log('Readiness probe will pass after ' + (READY_DELAY_MS / 1000) + 's');
+  if (SIMULATE_STARTUP_DELAY) {
+    console.log('Startup probe will pass after ' + (STARTUP_DELAY_MS / 1000) + 's');
+    console.log('Readiness probe will pass after ' + (READY_DELAY_MS / 1000) + 's');
+  } else {
+    console.log('Startup delay simulation is disabled');
+  }
 });
 
 process.on('SIGTERM', function () {

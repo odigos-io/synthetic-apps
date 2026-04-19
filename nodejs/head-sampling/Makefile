@@ -10,6 +10,7 @@ load-to-kind:
 apply:
 	kubectl create namespace nodejs-head-sampling --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n nodejs-head-sampling -f deployments/head-sampling/k8s.yaml
+	kubectl apply -n nodejs-head-sampling -f deployments/kubelet-health-probes/k8s.yaml
 	kubectl apply -n odigos-system -f deployments/head-sampling/sampling.yaml
 
 .PHONY: deploy
