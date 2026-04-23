@@ -1,14 +1,14 @@
 apiVersion: odigos.io/v1alpha1
 kind: Sampling
 metadata:
-  name: nodejs-head-sampling-rules
+  name: golang-head-sampling-rules
   namespace: odigos-system
 spec:
-  name: nodejs head-sampling test rules
+  name: golang head-sampling test rules
   notes: >-
-    Sampling rules for the nodejs head-sampling synthetic app.
+    Sampling rules for the golang head-sampling synthetic app.
     /sampling/percentage/no-rule is intentionally left without any matching rule to test default behavior.
-    Rules are scoped to the head-sampling Deployment in namespace nodejs-head-sampling (see Makefile apply).
+    Rules are scoped to the head-sampling Deployment in namespace golang-head-sampling (see Makefile apply).
   noisyOperations:
     - name: sampled-0
       notes: Explicit 0% sampling - all traces for this endpoint should be dropped
@@ -19,7 +19,7 @@ spec:
       sourceScopes: &headSamplingScopes
         - workloadKind: Deployment
           workloadName: head-sampling
-          workloadNamespace: nodejs-head-sampling
+          workloadNamespace: golang-head-sampling
     - name: sampled-50
       notes: 50% sampling - roughly half the traces for this endpoint should be kept
       percentageAtMost: 50
