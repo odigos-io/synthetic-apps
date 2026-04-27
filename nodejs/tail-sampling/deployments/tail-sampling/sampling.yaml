@@ -1,0 +1,40 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: nodejs-tail-sampling-rules
+  namespace: odigos-system
+spec:
+  name: nodejs tail-sampling test rules
+  notes: >-
+    Sampling rules for the nodejs tail-sampling synthetic app.
+    Error traces and operations above 1000ms are highly relevant and sampled at 100%.
+    Operations above 500ms are sampled at least 50%, and the remaining scenario traffic is reduced to 10%.
+    Rules are scoped to the tail-sampling Deployment in namespace nodejs-tail-sampling (see Makefile apply).
+    All scenario endpoints accept ?error=true to force an HTTP 500 response.
+  highlyRelevantOperations:
+    - name: high-relevance-error
+      notes: Error traces are highly relevant and sampled at 100%.
+      error: true
+      percentageAtLeast: 100
+      operation:
+        httpServer:
+          routePrefix: /sampling/tail
+      sourceScopes: &tailSamplingScopes
+        - workloadKind: Deployment
+          workloadName: tail-sampling
+          workloadNamespace: nodejs-tail-sampling
+    - name: high-relevance-duration-above-1000ms
+      notes: Operations with duration above 1000ms are highly relevant and sampled at 100%.
+      durationAtLeastMs: 1000
+      percentageAtLeast: 100
+      sourceScopes: *tailSamplingScopes
+    - name: duration-above-500ms
+      notes: Operations with duration above 500ms are sampled at least 50%.
+      durationAtLeastMs: 500
+      percentageAtLeast: 50
+      sourceScopes: *tailSamplingScopes
+  costReductionRules:
+    - name: cost-reduction-rest
+      notes: Remaining tail-sampling scenario traffic is sampled at most 10%.
+      percentageAtMost: 10
+      sourceScopes: *tailSamplingScopes
