@@ -24,6 +24,10 @@ status:
 	kubectl get pods -n nodejs-head-sampling
 	kubectl get services -n nodejs-head-sampling
 
+.PHONY: call-endpoints
+call-endpoints:
+	./scripts/call-endpoints.sh
+
 .PHONY: clean
 clean:
 	kubectl delete namespace nodejs-head-sampling --ignore-not-found=true

@@ -65,6 +65,19 @@ app.get('/sampling/percentage/sampled-fallback', function (req, res) {
   res.status(200).json({ endpoint: '/sampling/percentage/sampled-fallback', description: 'sampling rule with no percentage, falls back to 0%' });
 });
 
+// A sampling rule targets this route prefix with 50% sampling rate
+app.get('/sampling/route/prefix', function (req, res) {
+  res.status(200).json({ endpoint: '/sampling/route/prefix', description: 'route prefix sampling rule with 50% rate' });
+});
+
+app.get('/sampling/route/prefix/part-one', function (req, res) {
+  res.status(200).json({ endpoint: '/sampling/route/prefix/part-one', description: 'matches the /sampling/route/prefix sampling rule' });
+});
+
+app.get('/sampling/route/prefix/part-one/part-two', function (req, res) {
+  res.status(200).json({ endpoint: '/sampling/route/prefix/part-one/part-two', description: 'matches the /sampling/route/prefix sampling rule with more route parts' });
+});
+
 var server = app.listen(PORT, function () {
   console.log('head-sampling server running at http://127.0.0.1:' + PORT + '/');
   if (SIMULATE_STARTUP_DELAY) {
