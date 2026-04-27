@@ -78,6 +78,15 @@ app.get('/sampling/route/prefix/part-one/part-two', function (req, res) {
   res.status(200).json({ endpoint: '/sampling/route/prefix/part-one/part-two', description: 'matches the /sampling/route/prefix sampling rule with more route parts' });
 });
 
+// Sampling rules target these exact route templates, not the concrete request paths
+app.get('/sampling/route/exact/:itemId', function (req, res) {
+  res.status(200).json({ endpoint: '/sampling/route/exact/:itemId', item_id: req.params.itemId, description: 'exact sampling rule for a templated route' });
+});
+
+app.get('/sampling/route/exact/:itemId/details/:detailId', function (req, res) {
+  res.status(200).json({ endpoint: '/sampling/route/exact/:itemId/details/:detailId', item_id: req.params.itemId, detail_id: req.params.detailId, description: 'exact sampling rule for a templated route with multiple parameters' });
+});
+
 var server = app.listen(PORT, function () {
   console.log('head-sampling server running at http://127.0.0.1:' + PORT + '/');
   if (SIMULATE_STARTUP_DELAY) {
