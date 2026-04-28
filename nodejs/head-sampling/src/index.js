@@ -87,6 +87,147 @@ app.get('/sampling/route/exact/:itemId/details/:detailId', function (req, res) {
   res.status(200).json({ endpoint: '/sampling/route/exact/:itemId/details/:detailId', item_id: req.params.itemId, detail_id: req.params.detailId, description: 'exact sampling rule for a templated route with multiple parameters' });
 });
 
+// HTTP route matching scenarios for the head-sampling-http-matching deployment (see deployments/http-matching/)
+app.get('/http-match/control/no-rule', function (req, res) {
+  res.status(200).json({
+    category: 'control',
+    endpoint: '/http-match/control/no-rule',
+    description: 'no sampling rule targets this path; traces follow default pipeline behavior',
+  });
+});
+
+// Exact route match — literal path (sampling rule uses operation.httpServer.route)
+app.get('/http-match/exact/target', function (req, res) {
+  res.status(200).json({
+    category: 'exact_route',
+    endpoint: '/http-match/exact/target',
+    description: 'exact HTTP route match (full literal path)',
+  });
+});
+
+// Exact path for outbound POST tests (peer); not GET.
+app.post('/http-match/exact/post-target', function (req, res) {
+  res.status(200).json({
+    category: 'exact_route_post',
+    endpoint: '/http-match/exact/post-target',
+    description: 'POST-only exact path for client outbound tests',
+  });
+});
+
+// Prefix route match — static prefix; nested paths also match routePrefix rules
+app.get('/http-match/prefix/segment', function (req, res) {
+  res.status(200).json({
+    category: 'prefix_route',
+    endpoint: '/http-match/prefix/segment',
+    description: 'prefix HTTP route match (first segment after /http-match/prefix)',
+  });
+});
+
+app.get('/http-match/prefix/segment/nested', function (req, res) {
+  res.status(200).json({
+    category: 'prefix_route',
+    endpoint: '/http-match/prefix/segment/nested',
+    description: 'prefix HTTP route match (deeper path under the same static prefix)',
+  });
+});
+
+// Templatized exact match — fixed pattern with parameterized segments (rule uses * in route)
+app.get('/http-match/texact/:resourceId', function (req, res) {
+  res.status(200).json({
+    category: 'templatized_exact',
+    endpoint: '/http-match/texact/:resourceId',
+    resource_id: req.params.resourceId,
+    description: 'templatized exact route (one dynamic segment)',
+  });
+});
+
+// Templatized prefix match — wildcard segment in the prefix before a literal suffix
+app.get('/http-match/tprefix/:tenantId/items', function (req, res) {
+  res.status(200).json({
+    category: 'templatized_prefix',
+    endpoint: '/http-match/tprefix/:tenantId/items',
+    tenant_id: req.params.tenantId,
+    description: 'templatized prefix (tenant/items)',
+  });
+});
+
+app.get('/http-match/tprefix/:tenantId/items/:itemId', function (req, res) {
+  res.status(200).json({
+    category: 'templatized_prefix',
+    endpoint: '/http-match/tprefix/:tenantId/items/:itemId',
+    tenant_id: req.params.tenantId,
+    item_id: req.params.itemId,
+    description: 'templatized prefix with extra path under items',
+  });
+});
+
+// When HTTP_MATCH_PERIODIC_OUTBOUND=true (http-matching deployment), issue periodic outbound HTTP client requests.
+var httpMatchOutboundTimer = null;
+
+function startHttpMatchPeriodicOutboundIfEnabled() {
+  if (process.env.HTTP_MATCH_PERIODIC_OUTBOUND !== 'true') {
+    return;
+  }
+  var defaultPeerBase = process.env.HTTP_MATCH_PEER_BASE_URL || 'http://127.0.0.1:' + PORT;
+  var exactPeerBase =
+    process.env.HTTP_MATCH_EXACT_PEER_BASE_URL || defaultPeerBase;
+  var intervalMs = parseInt(process.env.HTTP_MATCH_OUTBOUND_INTERVAL_MS || '10000', 10);
+  if (isNaN(intervalMs) || intervalMs < 1000) {
+    intervalMs = 10000;
+  }
+  var exactPath = '/http-match/exact/target';
+  var postExactPath = '/http-match/exact/post-target';
+  var paths = [
+    '/http-match/prefix/segment/nested',
+    '/http-match/texact/out-peer-res',
+    '/http-match/tprefix/out-peer-tenant/items/out-peer-item',
+  ];
+  var requestsPerTick = 2 + 1 + paths.length;
+  function fireOutbound() {
+    var defaultBase = defaultPeerBase.replace(/\/$/, '');
+    var exactBase = exactPeerBase.replace(/\/$/, '');
+    fetch(defaultBase + exactPath).catch(function (err) {
+      console.error(
+        'http-match periodic outbound failed',
+        defaultBase + exactPath,
+        err.message
+      );
+    });
+    fetch(exactBase + exactPath).catch(function (err) {
+      console.error(
+        'http-match periodic outbound failed',
+        exactBase + exactPath,
+        err.message
+      );
+    });
+    fetch(defaultBase + postExactPath, { method: 'POST' }).catch(function (err) {
+      console.error(
+        'http-match periodic outbound POST failed',
+        defaultBase + postExactPath,
+        err.message
+      );
+    });
+    paths.forEach(function (relPath) {
+      var url = defaultBase + relPath;
+      fetch(url).catch(function (err) {
+        console.error('http-match periodic outbound failed', url, err.message);
+      });
+    });
+  }
+  console.log(
+    'http-match periodic outbound every ' +
+      intervalMs +
+      'ms → ' +
+      requestsPerTick +
+      ' requests/tick (GET exact ×2 + POST exact + other GETs; bases ' +
+      defaultPeerBase +
+      ' / ' +
+      exactPeerBase +
+      ')'
+  );
+  httpMatchOutboundTimer = setInterval(fireOutbound, intervalMs);
+}
+
 var server = app.listen(PORT, function () {
   console.log('head-sampling server running at http://127.0.0.1:' + PORT + '/');
   if (SIMULATE_STARTUP_DELAY) {
@@ -95,10 +236,15 @@ var server = app.listen(PORT, function () {
   } else {
     console.log('Startup delay simulation is disabled');
   }
+  startHttpMatchPeriodicOutboundIfEnabled();
 });
 
 process.on('SIGTERM', function () {
   console.log('SIGTERM received, shutting down gracefully...');
+  if (httpMatchOutboundTimer) {
+    clearInterval(httpMatchOutboundTimer);
+    httpMatchOutboundTimer = null;
+  }
   server.close(function () {
     console.log('HTTP server closed');
     process.exit(0);
