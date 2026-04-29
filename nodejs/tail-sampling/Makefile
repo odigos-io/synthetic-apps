@@ -27,6 +27,26 @@ status:
 call-endpoints:
 	./scripts/call-endpoints.sh
 
+# Deletes any prior run and creates a fresh Job that curls tail-sampling endpoints in-cluster.
+.PHONY: trigger-tail-sampling-curls
+trigger-tail-sampling-curls:
+	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
+	kubectl delete job tail-sampling-curls -n nodejs-tail-sampling --ignore-not-found=true
+	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/curl-job.yaml
+	kubectl wait --for=condition=complete job/tail-sampling-curls -n nodejs-tail-sampling --timeout=300s || \
+		(kubectl logs job/tail-sampling-curls -n nodejs-tail-sampling --tail=200; exit 1)
+	kubectl logs job/tail-sampling-curls -n nodejs-tail-sampling
+
+# Sample run: one request per scenario, prints response bodies to Job logs (kubectl logs).
+.PHONY: trigger-tail-sampling-sample
+trigger-tail-sampling-sample:
+	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
+	kubectl delete job tail-sampling-curl-sample -n nodejs-tail-sampling --ignore-not-found=true
+	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/curl-sample-job.yaml
+	kubectl wait --for=condition=complete job/tail-sampling-curl-sample -n nodejs-tail-sampling --timeout=180s || \
+		(kubectl logs job/tail-sampling-curl-sample -n nodejs-tail-sampling --tail=200; exit 1)
+	kubectl logs job/tail-sampling-curl-sample -n nodejs-tail-sampling
+
 .PHONY: clean
 clean:
 	kubectl delete namespace nodejs-tail-sampling --ignore-not-found=true

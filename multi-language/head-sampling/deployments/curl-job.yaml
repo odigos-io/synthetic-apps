@@ -1,4 +1,5 @@
 # One-off Job: curls the multi-language endpoint (Node -> Go) for trace/sampling tests.
+# Uses kube-injected Service env vars so this works when cluster DNS does not resolve Service names.
 # Trigger with: make trigger-ml-curls (from multi-language/head-sampling)
 apiVersion: batch/v1
 kind: Job
@@ -22,17 +23,16 @@ spec:
           args:
             - |
               set -eu
-              # Avoid cluster DNS dependency; use kube-injected Service env vars.
-              # (Service name: ml-head-sampling-nodejs => ML_HEAD_SAMPLING_NODEJS_SERVICE_HOST/PORT)
-              BASE_URL="http://$${ML_HEAD_SAMPLING_NODEJS_SERVICE_HOST}:$${ML_HEAD_SAMPLING_NODEJS_SERVICE_PORT}"
-              echo "BASE_URL=$${BASE_URL}"
+              # Service ml-head-sampling-nodejs -> ML_HEAD_SAMPLING_NODEJS_SERVICE_HOST / _PORT
+              BASE_URL="http://${ML_HEAD_SAMPLING_NODEJS_SERVICE_HOST}:${ML_HEAD_SAMPLING_NODEJS_SERVICE_PORT}"
+              echo "BASE_URL=${BASE_URL}"
               call_many() {
-                count=$$1
-                path=$$2
+                count=$1
+                path=$2
                 i=1
-                while [ $$i -le $$count ]; do
-                  curl -sS -f -o /dev/null "$${BASE_URL}$${path}"
-                  i=$$((i + 1))
+                while [ "$i" -le "$count" ]; do
+                  curl -sS -f -o /dev/null "${BASE_URL}${path}"
+                  i=$((i + 1))
                 done
               }
               call_many 30 "/ml/call-go"

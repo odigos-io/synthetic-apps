@@ -1,0 +1,51 @@
+# One-off Job: hits tail-sampling endpoints once each and prints JSON + HTTP code (for kubectl logs).
+# Trigger with: make trigger-tail-sampling-sample (from nodejs/tail-sampling)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tail-sampling-curl-sample
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: tail-sampling-curl-sample
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://${TAIL_SAMPLING_SERVICE_HOST}:${TAIL_SAMPLING_SERVICE_PORT}"
+              echo "BASE_URL=${BASE_URL}"
+
+              show() {
+                path=$1
+                echo ""
+                echo "=== GET ${path}"
+                curl -sS -w "\nHTTP %{http_code}\n" "${BASE_URL}${path}"
+              }
+
+              show "/healthz"
+              show "/sampling/tail/no-rule"
+              show "/sampling/tail/no-rule?error=true"
+              show "/sampling/tail/error"
+              show "/sampling/tail/error?error=true"
+              show "/sampling/tail/duration/short"
+              show "/sampling/tail/duration/short?error=true"
+              show "/sampling/tail/duration/medium"
+              show "/sampling/tail/duration/medium?error=true"
+              show "/sampling/tail/duration/long"
+              show "/sampling/tail/duration/long?error=true"
+              show "/sampling/tail/hops?hops=3"
+              show "/sampling/tail/hops?hops=3&error=true"
+              show "/sampling/tail/hops/non-propagating-error?hops=3"
+              show "/sampling/tail/hops/non-propagating-error?hops=3&error=true"
+              echo ""
+              echo "done"

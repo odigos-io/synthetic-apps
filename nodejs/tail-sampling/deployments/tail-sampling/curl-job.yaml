@@ -1,0 +1,64 @@
+# One-off Job: curls tail-sampling endpoints for trace verification (matches scripts/call-endpoints.sh).
+# Trigger with: make trigger-tail-sampling-curls (from nodejs/tail-sampling)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tail-sampling-curls
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: tail-sampling-curls
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              # Avoid relying on cluster DNS; kube injects Service env for tail-sampling:8080.
+              BASE_URL="http://${TAIL_SAMPLING_SERVICE_HOST}:${TAIL_SAMPLING_SERVICE_PORT}"
+              echo "BASE_URL=${BASE_URL}"
+
+              call_ok() {
+                curl -sS -f -o /dev/null "${BASE_URL}$1"
+              }
+              call_err() {
+                code=$(curl -sS -o /dev/null -w "%{http_code}" "${BASE_URL}$1")
+                if [ "$code" != "500" ]; then
+                  echo "expected HTTP 500 for $1 got $code" >&2
+                  exit 1
+                fi
+              }
+              call_many_ok() {
+                count=$1
+                path=$2
+                i=1
+                while [ "$i" -le "$count" ]; do
+                  curl -sS -f -o /dev/null "${BASE_URL}${path}"
+                  i=$((i + 1))
+                done
+              }
+
+              call_ok "/healthz"
+              call_ok "/sampling/tail/no-rule"
+              call_err "/sampling/tail/no-rule?error=true"
+              call_ok "/sampling/tail/error"
+              call_err "/sampling/tail/error?error=true"
+              call_many_ok 30 "/sampling/tail/duration/short"
+              call_err "/sampling/tail/duration/short?error=true"
+              call_many_ok 6 "/sampling/tail/duration/medium"
+              call_err "/sampling/tail/duration/medium?error=true"
+              call_ok "/sampling/tail/duration/long"
+              call_err "/sampling/tail/duration/long?error=true"
+              call_ok "/sampling/tail/hops?hops=3"
+              call_err "/sampling/tail/hops?hops=3&error=true"
+              call_ok "/sampling/tail/hops/non-propagating-error?hops=3"
+              call_err "/sampling/tail/hops/non-propagating-error?hops=3&error=true"
+              echo "all curls succeeded"
