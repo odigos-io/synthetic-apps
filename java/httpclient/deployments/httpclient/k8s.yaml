@@ -1,0 +1,48 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: httpclient
+  labels:
+    app: httpclient
+spec:
+  selector:
+    matchLabels:
+      app: httpclient
+  template:
+    metadata:
+      labels:
+        app: httpclient
+    spec:
+      containers:
+        - name: httpclient
+          image: ghcr.io/odigos-io/synthetic-apps/java-httpclient:httpclient
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: httpclient
+spec:
+  selector:
+    app: httpclient
+  ports:
+    - protocol: TCP
+      port: 8080
