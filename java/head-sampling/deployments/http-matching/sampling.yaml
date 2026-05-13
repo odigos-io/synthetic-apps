@@ -1,0 +1,93 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: java-head-sampling-http-matching-rules
+  namespace: odigos-system
+spec:
+  name: java head-sampling http-matching rules
+  notes: >-
+    Head sampling rules scoped to Deployment head-sampling-http-matching in java-head-sampling.
+    Endpoints under /http-match/ exercise exact route, prefix route, templatized exact route,
+    and templatized prefix route matching. /http-match/control/no-rule has no rule for default-behavior tests.
+    Apply with: kubectl apply -n odigos-system -f deployments/http-matching/sampling.yaml
+  noisyOperations:
+    - name: http-match-exact-route
+      notes: Exact literal path /http-match/exact/target
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /http-match/exact/target
+      sourceScopes: &httpMatchingScopes
+        - workloadKind: Deployment
+          workloadName: head-sampling-http-matching
+          workloadNamespace: java-head-sampling
+    - name: http-match-prefix-route
+      notes: Prefix match for all paths starting with /http-match/prefix
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          routePrefix: /http-match/prefix
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-templatized-exact
+      notes: Templatized exact route with one dynamic segment (/http-match/texact/:resourceId)
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /http-match/texact/*
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-templatized-prefix
+      notes: >-
+        Templatized prefix — wildcard tenant segment then literal /items prefix
+        (paths like /http-match/tprefix/acme/items)
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          routePrefix: /http-match/tprefix/*/items
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-outbound-exact
+      notes: >-
+        Client GET to /http-match/exact/target via the cluster Service (HTTP_MATCH_EXACT_PEER_BASE_URL);
+        server.address is head-sampling-http-matching, not 127.0.0.1.
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          serverAddress: head-sampling-http-matching
+          templatedPath: /http-match/exact/target
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-outbound-post-exact
+      notes: Client POST to exact path /http-match/exact/post-target (periodic outbound when HTTP_MATCH_PERIODIC_OUTBOUND=true)
+      percentageAtMost: 10
+      operation:
+        httpClient:
+          method: POST
+          templatedPath: /http-match/exact/post-target
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-outbound-prefix
+      notes: Prefix route to outbound service /http-match/prefix/segment
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          templatedPath: /http-match/prefix/segment
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-outbound-templatized-exact
+      notes: Templatized exact route to outbound service /http-match/texact/:resourceId
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          templatedPath: /http-match/texact/*
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-outbound-templatized-prefix
+      notes: Templatized prefix route to outbound service /http-match/tprefix/*/items
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          templatedPath: /http-match/tprefix/*/items
+      sourceScopes: *httpMatchingScopes
+    - name: http-match-outbound-server-address
+      notes: Client GET to /http-match/exact/target via the cluster Service (HTTP_MATCH_EXACT_PEER_BASE_URL);
+        server.address is head-sampling-http-matching, not 127.0.0.1.
+      percentageAtMost: 25
+      operation:
+        httpClient:
+          serverAddress: head-sampling-http-matching
+      sourceScopes: *httpMatchingScopes
