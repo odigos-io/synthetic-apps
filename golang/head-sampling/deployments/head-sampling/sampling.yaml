@@ -17,9 +17,10 @@ spec:
         httpServer:
           route: /sampling/percentage/sampled-0
       sourceScopes: &headSamplingScopes
-        - workloadKind: Deployment
-          workloadName: head-sampling
-          workloadNamespace: golang-head-sampling
+        sources:
+          - kind: Deployment
+            name: head-sampling
+            namespace: golang-head-sampling
     - name: sampled-50
       notes: 50% sampling - roughly half the traces for this endpoint should be kept
       percentageAtMost: 50

@@ -27,12 +27,14 @@ spec:
               call_many() {
                 count=$$1
                 path=$$2
+                echo "GET $${BASE_URL}$${path} x$${count}"
                 i=1
                 while [ $$i -le $$count ]; do
                   curl -sS -f -o /dev/null "$${BASE_URL}$${path}"
                   i=$$((i + 1))
                 done
               }
+              echo "GET $${BASE_URL}/http-match/control/no-rule"
               curl -sS -f -o /dev/null "$${BASE_URL}/http-match/control/no-rule"
               call_many 20 "/http-match/exact/target"
               call_many 20 "/http-match/prefix/segment"

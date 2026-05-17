@@ -20,9 +20,10 @@ spec:
         httpServer:
           routePrefix: /sampling/tail
       sourceScopes: &tailSamplingScopes
-        - workloadKind: Deployment
-          workloadName: tail-sampling
-          workloadNamespace: nodejs-tail-sampling
+        sources:
+          - kind: Deployment
+            name: tail-sampling
+            namespace: nodejs-tail-sampling
     - name: high-relevance-duration-above-1000ms
       notes: Operations with duration above 1000ms are highly relevant and sampled at 100%.
       durationAtLeastMs: 1000

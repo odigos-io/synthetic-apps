@@ -18,9 +18,10 @@ spec:
         httpServer:
           route: /http-match/exact/target
       sourceScopes: &httpMatchingScopes
-        - workloadKind: Deployment
-          workloadName: head-sampling-http-matching
-          workloadNamespace: nodejs-head-sampling
+        sources:
+          - kind: Deployment
+            name: head-sampling-http-matching
+            namespace: nodejs-head-sampling
     - name: http-match-prefix-route
       notes: Prefix match for all paths starting with /http-match/prefix
       percentageAtMost: 50
