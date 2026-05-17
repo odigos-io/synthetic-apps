@@ -34,26 +34,28 @@ public class HttpMatchPeriodicOutbound {
         String defaultPeerBase = stripTrailingSlash(env("HTTP_MATCH_PEER_BASE_URL", "http://127.0.0.1:" + PORT));
         String exactPeerBase = stripTrailingSlash(env("HTTP_MATCH_EXACT_PEER_BASE_URL", defaultPeerBase));
         long intervalMs = parseIntervalMs(env("HTTP_MATCH_OUTBOUND_INTERVAL_MS", "10000"));
-        String exactPath = "/http-match/exact/target";
+        String exactGetPath = "/http-match/exact/target";
         String postExactPath = "/http-match/exact/post-target";
-        String[] paths = {
+        String[] prefixAndTemplatedPaths = {
+                "/http-match/prefix/segment",
                 "/http-match/prefix/segment/nested",
                 "/http-match/texact/out-peer-res",
+                "/http-match/tprefix/out-peer-tenant/items",
                 "/http-match/tprefix/out-peer-tenant/items/out-peer-item",
         };
-        int requestsPerTick = 2 + 1 + paths.length;
+        int requestsPerTick = 2 + 1 + prefixAndTemplatedPaths.length;
 
         Runnable fireOutbound = () -> {
-            getIgnoreErrors(defaultPeerBase + exactPath);
-            getIgnoreErrors(exactPeerBase + exactPath);
+            getIgnoreErrors(defaultPeerBase + exactGetPath);
+            getIgnoreErrors(exactPeerBase + exactGetPath);
             postIgnoreErrors(defaultPeerBase + postExactPath);
-            for (String relPath : paths) {
+            for (String relPath : prefixAndTemplatedPaths) {
                 getIgnoreErrors(defaultPeerBase + relPath);
             }
         };
 
         log.info(
-                "http-match periodic outbound every {}ms → {} requests/tick (GET exact ×2 + POST exact + other GETs; bases {} / {})",
+                "http-match periodic outbound every {}ms → {} requests/tick (GET exact ×2 + POST exact + prefix/templated GETs; bases {} / {})",
                 intervalMs,
                 requestsPerTick,
                 defaultPeerBase,

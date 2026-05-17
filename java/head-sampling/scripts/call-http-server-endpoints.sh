@@ -2,6 +2,7 @@
 
 set -eu
 
+# Port-forward head-sampling-http-server:8080 or set BASE_URL to the in-cluster Service URL.
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 
 call_endpoint() {
