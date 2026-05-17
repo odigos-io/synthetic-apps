@@ -1,0 +1,66 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: python-head-sampling-rules
+  namespace: odigos-system
+spec:
+  name: python head-sampling test rules
+  notes: >-
+    Sampling rules for the python head-sampling synthetic app.
+    /sampling/percentage/no-rule is intentionally left without any matching rule to test default behavior.
+    /sampling/route/prefix and nested route parts are sampled through a routePrefix rule.
+    /sampling/route/exact/:itemId routes test exact matching against templated HTTP routes.
+    Rules are scoped to the head-sampling Deployment in namespace python-head-sampling (see Makefile apply).
+  noisyOperations:
+    - name: sampled-0
+      notes: Explicit 0% sampling - all traces for this endpoint should be dropped
+      percentageAtMost: 0
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-0
+      sourceScopes: &headSamplingScopes
+        sources:
+          - kind: Deployment
+            name: head-sampling
+            namespace: python-head-sampling
+    - name: sampled-50
+      notes: 50% sampling - roughly half the traces for this endpoint should be kept
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-50
+      sourceScopes: *headSamplingScopes
+    - name: sampled-100
+      notes: 100% sampling - all traces for this endpoint should be kept
+      percentageAtMost: 100
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-100
+      sourceScopes: *headSamplingScopes
+    - name: sampled-fallback
+      notes: No percentageAtMost set - falls back to default 0%
+      operation:
+        httpServer:
+          route: /sampling/percentage/sampled-fallback
+      sourceScopes: *headSamplingScopes
+    - name: route-prefix-sampled-50
+      notes: 50% sampling for all routes starting with /sampling/route/prefix
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          routePrefix: /sampling/route/prefix
+      sourceScopes: *headSamplingScopes
+    - name: exact-templated-route-sampled-50
+      notes: 50% sampling for the exact templated route /sampling/route/exact/:itemId
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /sampling/route/exact/*
+      sourceScopes: *headSamplingScopes
+    - name: exact-templated-route-details-sampled-50
+      notes: 50% sampling for the exact templated route /sampling/route/exact/:itemId/details/:detailId
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /sampling/route/exact/*/details/*
+      sourceScopes: *headSamplingScopes

@@ -1,0 +1,53 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubelet-health-probes
+  labels:
+    app: kubelet-health-probes
+spec:
+  selector:
+    matchLabels:
+      app: kubelet-health-probes
+  template:
+    metadata:
+      labels:
+        app: kubelet-health-probes
+    spec:
+      containers:
+        - name: kubelet-health-probes
+          image: ghcr.io/odigos-io/synthetic-apps/python-head-sampling:head-sampling
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SIMULATE_STARTUP_DELAY
+              value: "true"
+          startupProbe:
+            httpGet:
+              path: /healthz/startup
+              port: 8080
+            periodSeconds: 1
+            failureThreshold: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubelet-health-probes
+spec:
+  selector:
+    app: kubelet-health-probes
+  ports:
+    - protocol: TCP
+      port: 8080

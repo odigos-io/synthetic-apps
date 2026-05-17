@@ -87,7 +87,8 @@ app.get('/sampling/route/exact/:itemId/details/:detailId', function (req, res) {
   res.status(200).json({ endpoint: '/sampling/route/exact/:itemId/details/:detailId', item_id: req.params.itemId, detail_id: req.params.detailId, description: 'exact sampling rule for a templated route with multiple parameters' });
 });
 
-// HTTP route matching scenarios for the head-sampling-http-matching deployment (see deployments/http-matching/)
+// HTTP route matching scenarios (see deployments/http-server/ and deployments/http-client/)
+function registerHttpMatchRoutes() {
 app.get('/http-match/control/no-rule', function (req, res) {
   res.status(200).json({
     category: 'control',
@@ -160,8 +161,13 @@ app.get('/http-match/tprefix/:tenantId/items/:itemId', function (req, res) {
     description: 'templatized prefix with extra path under items',
   });
 });
+}
 
-// When HTTP_MATCH_PERIODIC_OUTBOUND=true (http-matching deployment), issue periodic outbound HTTP client requests.
+if (process.env.HTTP_MATCH_ENABLE_ROUTES !== 'false') {
+  registerHttpMatchRoutes();
+}
+
+// When HTTP_MATCH_PERIODIC_OUTBOUND=true (http-client deployment), issue periodic outbound HTTP client requests.
 var httpMatchOutboundTimer = null;
 
 function startHttpMatchPeriodicOutboundIfEnabled() {
@@ -175,28 +181,30 @@ function startHttpMatchPeriodicOutboundIfEnabled() {
   if (isNaN(intervalMs) || intervalMs < 1000) {
     intervalMs = 10000;
   }
-  var exactPath = '/http-match/exact/target';
+  var exactGetPath = '/http-match/exact/target';
   var postExactPath = '/http-match/exact/post-target';
-  var paths = [
+  var prefixAndTemplatedPaths = [
+    '/http-match/prefix/segment',
     '/http-match/prefix/segment/nested',
     '/http-match/texact/out-peer-res',
+    '/http-match/tprefix/out-peer-tenant/items',
     '/http-match/tprefix/out-peer-tenant/items/out-peer-item',
   ];
-  var requestsPerTick = 2 + 1 + paths.length;
+  var requestsPerTick = 2 + 1 + prefixAndTemplatedPaths.length;
   function fireOutbound() {
     var defaultBase = defaultPeerBase.replace(/\/$/, '');
     var exactBase = exactPeerBase.replace(/\/$/, '');
-    fetch(defaultBase + exactPath).catch(function (err) {
+    fetch(defaultBase + exactGetPath).catch(function (err) {
       console.error(
         'http-match periodic outbound failed',
-        defaultBase + exactPath,
+        defaultBase + exactGetPath,
         err.message
       );
     });
-    fetch(exactBase + exactPath).catch(function (err) {
+    fetch(exactBase + exactGetPath).catch(function (err) {
       console.error(
         'http-match periodic outbound failed',
-        exactBase + exactPath,
+        exactBase + exactGetPath,
         err.message
       );
     });
@@ -207,7 +215,7 @@ function startHttpMatchPeriodicOutboundIfEnabled() {
         err.message
       );
     });
-    paths.forEach(function (relPath) {
+    prefixAndTemplatedPaths.forEach(function (relPath) {
       var url = defaultBase + relPath;
       fetch(url).catch(function (err) {
         console.error('http-match periodic outbound failed', url, err.message);
@@ -219,7 +227,7 @@ function startHttpMatchPeriodicOutboundIfEnabled() {
       intervalMs +
       'ms → ' +
       requestsPerTick +
-      ' requests/tick (GET exact ×2 + POST exact + other GETs; bases ' +
+      ' requests/tick (GET exact ×2 + POST exact + prefix/templated GETs; bases ' +
       defaultPeerBase +
       ' / ' +
       exactPeerBase +

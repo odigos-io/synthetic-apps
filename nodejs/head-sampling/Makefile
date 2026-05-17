@@ -10,10 +10,12 @@ load-to-kind:
 apply:
 	kubectl create namespace nodejs-head-sampling --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n nodejs-head-sampling -f deployments/head-sampling/k8s.yaml
-	kubectl apply -n nodejs-head-sampling -f deployments/http-matching/k8s.yaml
+	kubectl apply -n nodejs-head-sampling -f deployments/http-server/k8s.yaml
+	kubectl apply -n nodejs-head-sampling -f deployments/http-client/k8s.yaml
 	kubectl apply -n nodejs-head-sampling -f deployments/kubelet-health-probes/k8s.yaml
 	kubectl apply -n odigos-system -f deployments/head-sampling/sampling.yaml
-	kubectl apply -n odigos-system -f deployments/http-matching/sampling.yaml
+	kubectl apply -n odigos-system -f deployments/http-server/sampling.yaml
+	kubectl apply -n odigos-system -f deployments/http-client/sampling.yaml
 
 .PHONY: deploy
 deploy:
@@ -30,19 +32,19 @@ status:
 call-endpoints:
 	./scripts/call-endpoints.sh
 
-.PHONY: call-http-matching-endpoints
-call-http-matching-endpoints:
-	./scripts/call-http-matching-endpoints.sh
+.PHONY: call-http-server-endpoints
+call-http-server-endpoints:
+	./scripts/call-http-server-endpoints.sh
 
-# Deletes any prior run and creates a fresh Job that curls http-matching endpoints in-cluster.
-.PHONY: trigger-http-matching-curls
-trigger-http-matching-curls:
+# Deletes any prior run and creates a fresh Job that curls http-server endpoints in-cluster.
+.PHONY: trigger-http-server-curls
+trigger-http-server-curls:
 	kubectl create namespace nodejs-head-sampling --dry-run=client -o yaml | kubectl apply -f -
-	kubectl delete job head-sampling-http-matching-curls -n nodejs-head-sampling --ignore-not-found=true
-	kubectl apply -n nodejs-head-sampling -f deployments/http-matching/curl-job.yaml
-	kubectl wait --for=condition=complete job/head-sampling-http-matching-curls -n nodejs-head-sampling --timeout=180s || \
-		(kubectl logs job/head-sampling-http-matching-curls -n nodejs-head-sampling --tail=200; exit 1)
-	kubectl logs job/head-sampling-http-matching-curls -n nodejs-head-sampling
+	kubectl delete job head-sampling-http-server-curls -n nodejs-head-sampling --ignore-not-found=true
+	kubectl apply -n nodejs-head-sampling -f deployments/http-server/curl-job.yaml
+	kubectl wait --for=condition=complete job/head-sampling-http-server-curls -n nodejs-head-sampling --timeout=180s || \
+		(kubectl logs job/head-sampling-http-server-curls -n nodejs-head-sampling --tail=200; exit 1)
+	kubectl logs job/head-sampling-http-server-curls -n nodejs-head-sampling
 
 .PHONY: clean
 clean:

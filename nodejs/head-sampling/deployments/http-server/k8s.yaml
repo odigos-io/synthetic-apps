@@ -1,0 +1,47 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: head-sampling-http-server
+  labels:
+    app: head-sampling-http-server
+spec:
+  selector:
+    matchLabels:
+      app: head-sampling-http-server
+  template:
+    metadata:
+      labels:
+        app: head-sampling-http-server
+    spec:
+      containers:
+        - name: head-sampling-http-server
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-head-sampling:head-sampling
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: HTTP_MATCH_ENABLE_ROUTES
+              value: "true"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: head-sampling-http-server
+spec:
+  selector:
+    app: head-sampling-http-server
+  ports:
+    - protocol: TCP
+      port: 8080

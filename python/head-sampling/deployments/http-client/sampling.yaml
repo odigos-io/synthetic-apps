@@ -1,0 +1,58 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: python-head-sampling-http-client-rules
+  namespace: odigos-system
+spec:
+  name: python head-sampling http-client rules
+  notes: >-
+    Head sampling for periodic outbound HTTP client spans from Deployment
+    head-sampling-http-client in python-head-sampling (target Service
+    head-sampling-http-server). Apply with:
+    kubectl apply -n odigos-system -f deployments/http-client/sampling.yaml
+  noisyOperations:
+    - name: http-match-outbound-exact
+      notes: >-
+        Client GET to /http-match/exact/target via head-sampling-http-server Service;
+        server.address is head-sampling-http-server.
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          serverAddress: head-sampling-http-server
+          templatedPath: /http-match/exact/target
+      sourceScopes: &httpClientScopes
+        sources:
+          - kind: Deployment
+            name: head-sampling-http-client
+            namespace: python-head-sampling
+    - name: http-match-outbound-post-exact
+      notes: Client POST to exact path /http-match/exact/post-target (periodic outbound timer)
+      percentageAtMost: 10
+      operation:
+        httpClient:
+          method: POST
+          templatedPath: /http-match/exact/post-target
+      sourceScopes: *httpClientScopes
+    - name: http-match-outbound-prefix
+      notes: Prefix match for outbound paths starting with /http-match/prefix
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          templatedPathPrefix: /http-match/prefix
+      sourceScopes: *httpClientScopes
+    - name: http-match-outbound-templatized-exact
+      notes: Templatized exact route to outbound service /http-match/texact/:resourceId
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          templatedPath: /http-match/texact/*
+      sourceScopes: *httpClientScopes
+    - name: http-match-outbound-templatized-prefix
+      notes: >-
+        Templatized prefix — wildcard tenant segment then literal /items prefix
+        (paths like /http-match/tprefix/acme/items)
+      percentageAtMost: 50
+      operation:
+        httpClient:
+          templatedPathPrefix: /http-match/tprefix/*/items
+      sourceScopes: *httpClientScopes

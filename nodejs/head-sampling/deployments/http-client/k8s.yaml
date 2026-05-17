@@ -1,30 +1,32 @@
+# Periodic outbound timer; first span is always HTTP client to head-sampling-http-server.
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: head-sampling-http-matching
+  name: head-sampling-http-client
   labels:
-    app: head-sampling-http-matching
+    app: head-sampling-http-client
 spec:
   selector:
     matchLabels:
-      app: head-sampling-http-matching
+      app: head-sampling-http-client
   template:
     metadata:
       labels:
-        app: head-sampling-http-matching
+        app: head-sampling-http-client
     spec:
       containers:
-        - name: head-sampling-http-matching
+        - name: head-sampling-http-client
           image: ghcr.io/odigos-io/synthetic-apps/nodejs-head-sampling:head-sampling
           imagePullPolicy: IfNotPresent
           env:
+            - name: HTTP_MATCH_ENABLE_ROUTES
+              value: "false"
             - name: HTTP_MATCH_PERIODIC_OUTBOUND
               value: "true"
             - name: HTTP_MATCH_PEER_BASE_URL
-              value: "http://127.0.0.1:8080"
-            # Exact-route outbound only: use cluster DNS so server.address is the Service name.
+              value: "http://head-sampling-http-server:8080"
             - name: HTTP_MATCH_EXACT_PEER_BASE_URL
-              value: "http://head-sampling-http-matching:8080"
+              value: "http://head-sampling-http-server:8080"
             - name: HTTP_MATCH_OUTBOUND_INTERVAL_MS
               value: "10000"
           ports:
@@ -41,14 +43,3 @@ spec:
               port: 8080
             periodSeconds: 10
             failureThreshold: 3
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: head-sampling-http-matching
-spec:
-  selector:
-    app: head-sampling-http-matching
-  ports:
-    - protocol: TCP
-      port: 8080

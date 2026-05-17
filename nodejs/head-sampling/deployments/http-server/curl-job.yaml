@@ -1,16 +1,16 @@
-# One-off Job: curls head-sampling-http-matching endpoints for trace/sampling tests.
-# Trigger with: make trigger-http-matching-curls (from nodejs/head-sampling)
+# One-off Job: curls head-sampling-http-server endpoints for trace/sampling tests.
+# Trigger with: make trigger-http-server-curls (from nodejs/head-sampling)
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: head-sampling-http-matching-curls
+  name: head-sampling-http-server-curls
 spec:
   ttlSecondsAfterFinished: 600
   backoffLimit: 2
   template:
     metadata:
       labels:
-        app: head-sampling-http-matching-curls
+        app: head-sampling-http-server-curls
     spec:
       restartPolicy: Never
       terminationGracePeriodSeconds: 30
@@ -22,7 +22,7 @@ spec:
           args:
             - |
               set -eu
-              BASE_URL="http://head-sampling-http-matching:8080"
+              BASE_URL="http://head-sampling-http-server:8080"
               echo "BASE_URL=$${BASE_URL}"
               call_many() {
                 count=$$1

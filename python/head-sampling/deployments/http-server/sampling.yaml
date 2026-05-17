@@ -1,0 +1,46 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: python-head-sampling-http-server-rules
+  namespace: odigos-system
+spec:
+  name: python head-sampling http-server rules
+  notes: >-
+    Head sampling for incoming /http-match/* on Deployment head-sampling-http-server
+    in python-head-sampling. Apply with:
+    kubectl apply -n odigos-system -f deployments/http-server/sampling.yaml
+  noisyOperations:
+    - name: http-match-exact-route
+      notes: Exact literal path /http-match/exact/target
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /http-match/exact/target
+      sourceScopes: &httpServerScopes
+        sources:
+          - kind: Deployment
+            name: head-sampling-http-server
+            namespace: python-head-sampling
+    - name: http-match-prefix-route
+      notes: Prefix match for all paths starting with /http-match/prefix
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          routePrefix: /http-match/prefix
+      sourceScopes: *httpServerScopes
+    - name: http-match-templatized-exact
+      notes: Templatized exact route with one dynamic segment (/http-match/texact/:resourceId)
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          route: /http-match/texact/*
+      sourceScopes: *httpServerScopes
+    - name: http-match-templatized-prefix
+      notes: >-
+        Templatized prefix — wildcard tenant segment then literal /items prefix
+        (paths like /http-match/tprefix/acme/items)
+      percentageAtMost: 50
+      operation:
+        httpServer:
+          routePrefix: /http-match/tprefix/*/items
+      sourceScopes: *httpServerScopes
