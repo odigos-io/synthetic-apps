@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-aws-sns-sqs
+  namespace: nodejs-aws-sns-sqs
+spec:
+  workload:
+    kind: Deployment
+    name: aws-sns-sqs
+    namespace: nodejs-aws-sns-sqs

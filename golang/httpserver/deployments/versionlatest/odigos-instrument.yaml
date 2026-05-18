@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-versionlatest
+  namespace: golang-httpserver
+spec:
+  workload:
+    kind: Deployment
+    name: versionlatest
+    namespace: golang-httpserver

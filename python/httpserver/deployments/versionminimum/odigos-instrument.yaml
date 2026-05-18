@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-versionminimum
+  namespace: python-httpserver
+spec:
+  workload:
+    kind: Deployment
+    name: versionminimum
+    namespace: python-httpserver

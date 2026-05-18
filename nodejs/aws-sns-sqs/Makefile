@@ -11,6 +11,7 @@ apply:
 	kubectl create namespace nodejs-aws-sns-sqs --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n nodejs-aws-sns-sqs -f deployments/aws-sns-sqs/localstack.yaml
 	kubectl apply -n nodejs-aws-sns-sqs -f deployments/aws-sns-sqs/k8s.yaml
+	kubectl apply -n nodejs-aws-sns-sqs -f deployments/aws-sns-sqs/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

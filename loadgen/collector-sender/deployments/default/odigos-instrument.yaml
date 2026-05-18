@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-loadgen-collector-sender
+  namespace: loadgen-default
+spec:
+  workload:
+    kind: Deployment
+    name: loadgen-collector-sender
+    namespace: loadgen-default

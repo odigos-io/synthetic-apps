@@ -10,10 +10,11 @@ load-to-kind:
 apply:
 	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n nodejs-tail-sampling -f deployments/errors/k8s.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/duration/k8s.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/k8s.yaml
 	kubectl apply -n nodejs-tail-sampling -f deployments/errors/odigos-instrument.yaml
+	kubectl apply -n nodejs-tail-sampling -f deployments/duration/k8s.yaml
 	kubectl apply -n nodejs-tail-sampling -f deployments/duration/odigos-instrument.yaml
+	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/k8s.yaml
+	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/odigos-instrument.yaml
 	kubectl apply -n odigos-system -f deployments/errors/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/duration/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/tail-sampling/sampling.yaml

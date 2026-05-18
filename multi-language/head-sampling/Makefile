@@ -20,6 +20,7 @@ load-to-kind:
 apply:
 	kubectl create namespace multi-language-head-sampling --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n multi-language-head-sampling -f deployments/k8s.yaml
+	kubectl apply -n multi-language-head-sampling -f deployments/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

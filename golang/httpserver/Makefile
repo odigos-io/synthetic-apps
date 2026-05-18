@@ -16,9 +16,13 @@ load-to-kind:
 apply:
 	kubectl create namespace golang-httpserver --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n golang-httpserver -f deployments/httpserver/k8s.yaml
+	kubectl apply -n golang-httpserver -f deployments/httpserver/odigos-instrument.yaml
 	kubectl apply -n golang-httpserver -f deployments/versionlatest/k8s.yaml
+	kubectl apply -n golang-httpserver -f deployments/versionlatest/odigos-instrument.yaml
 	kubectl apply -n golang-httpserver -f deployments/versionminimum/k8s.yaml
+	kubectl apply -n golang-httpserver -f deployments/versionminimum/odigos-instrument.yaml
 	kubectl apply -n golang-httpserver -f deployments/versionunsupported/k8s.yaml
+	kubectl apply -n golang-httpserver -f deployments/versionunsupported/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

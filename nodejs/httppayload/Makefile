@@ -10,6 +10,7 @@ load-to-kind:
 apply:
 	kubectl create namespace nodejs-httppayload --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n nodejs-httppayload -f deployments/httppayload/k8s.yaml
+	kubectl apply -n nodejs-httppayload -f deployments/httppayload/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-httpserver
+  namespace: java-httpserver
+spec:
+  workload:
+    kind: Deployment
+    name: httpserver
+    namespace: java-httpserver

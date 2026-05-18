@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-kubelet-health-probes
+  namespace: golang-head-sampling
+spec:
+  workload:
+    kind: Deployment
+    name: kubelet-health-probes
+    namespace: golang-head-sampling

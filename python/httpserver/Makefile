@@ -23,12 +23,19 @@ load-to-kind:
 apply:
 	kubectl create namespace python-httpserver --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n python-httpserver -f deployments/httpserver/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/httpserver/odigos-instrument.yaml
 	kubectl apply -n python-httpserver -f deployments/versionlatest/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/versionlatest/odigos-instrument.yaml
 	kubectl apply -n python-httpserver -f deployments/versionminimum/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/versionminimum/odigos-instrument.yaml
 	kubectl apply -n python-httpserver -f deployments/versionunsupported/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/versionunsupported/odigos-instrument.yaml
 	kubectl apply -n python-httpserver -f deployments/versionveryold/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/versionveryold/odigos-instrument.yaml
 	kubectl apply -n python-httpserver -f deployments/envdockerfile/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/envdockerfile/odigos-instrument.yaml
 	kubectl apply -n python-httpserver -f deployments/envmanifest/k8s.yaml
+	kubectl apply -n python-httpserver -f deployments/envmanifest/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

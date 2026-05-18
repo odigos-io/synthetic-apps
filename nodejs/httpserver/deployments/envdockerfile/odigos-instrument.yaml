@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-envdockerfile
+  namespace: nodejs-httpserver
+spec:
+  workload:
+    kind: Deployment
+    name: envdockerfile
+    namespace: nodejs-httpserver

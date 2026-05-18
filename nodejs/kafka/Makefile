@@ -11,6 +11,7 @@ apply:
 	kubectl create namespace nodejs-kafka --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n nodejs-kafka -f deployments/kafka/kafka.yaml
 	kubectl apply -n nodejs-kafka -f deployments/kafka/k8s.yaml
+	kubectl apply -n nodejs-kafka -f deployments/kafka/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

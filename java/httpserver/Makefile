@@ -19,10 +19,15 @@ load-to-kind:
 apply:
 	kubectl create namespace java-httpserver --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n java-httpserver -f deployments/httpserver/k8s.yaml
+	kubectl apply -n java-httpserver -f deployments/httpserver/odigos-instrument.yaml
 	kubectl apply -n java-httpserver -f deployments/versionlatest/k8s.yaml
+	kubectl apply -n java-httpserver -f deployments/versionlatest/odigos-instrument.yaml
 	kubectl apply -n java-httpserver -f deployments/versionminimum/k8s.yaml
+	kubectl apply -n java-httpserver -f deployments/versionminimum/odigos-instrument.yaml
 	kubectl apply -n java-httpserver -f deployments/envdockerfile/k8s.yaml
+	kubectl apply -n java-httpserver -f deployments/envdockerfile/odigos-instrument.yaml
 	kubectl apply -n java-httpserver -f deployments/envmanifest/k8s.yaml
+	kubectl apply -n java-httpserver -f deployments/envmanifest/odigos-instrument.yaml
 
 .PHONY: deploy
 deploy:

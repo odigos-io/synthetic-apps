@@ -1,10 +1,10 @@
 apiVersion: odigos.io/v1alpha1
 kind: Source
 metadata:
-  name: instrument-nodejs-tail-sampling-ns
+  name: instrument-tail-sampling-errors
   namespace: nodejs-tail-sampling
 spec:
   workload:
-    kind: Namespace
-    name: nodejs-tail-sampling
+    kind: Deployment
+    name: tail-sampling-errors
     namespace: nodejs-tail-sampling

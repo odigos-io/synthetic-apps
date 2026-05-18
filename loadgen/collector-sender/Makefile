@@ -10,6 +10,7 @@ load-to-kind:
 apply:
 	kubectl create namespace loadgen-default --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -n loadgen-default -f deployments/default/k8s.yaml
+	kubectl apply -n loadgen-default -f deployments/default/odigos-instrument.yaml
 	kubectl rollout restart deployment loadgen-collector-sender -n loadgen-default
 
 .PHONY: deploy

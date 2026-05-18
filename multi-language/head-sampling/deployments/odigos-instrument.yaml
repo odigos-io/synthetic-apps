@@ -1,0 +1,21 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-ml-head-sampling-go
+  namespace: multi-language-head-sampling
+spec:
+  workload:
+    kind: Deployment
+    name: ml-head-sampling-go
+    namespace: multi-language-head-sampling
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-ml-head-sampling-nodejs
+  namespace: multi-language-head-sampling
+spec:
+  workload:
+    kind: Deployment
+    name: ml-head-sampling-nodejs
+    namespace: multi-language-head-sampling
