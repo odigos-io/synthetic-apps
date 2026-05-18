@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-nodejs-tail-sampling-duration
+  namespace: nodejs-tail-sampling
+spec:
+  workload:
+    kind: Deployment
+    name: tail-sampling-duration
+    namespace: nodejs-tail-sampling

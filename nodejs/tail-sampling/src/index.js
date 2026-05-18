@@ -38,6 +38,14 @@ function parseHops(req) {
   return hops;
 }
 
+function parseDelayMs(req) {
+  var ms = parseInt(req.query.ms, 10);
+  if (Number.isNaN(ms) || ms < 0) {
+    return 0;
+  }
+  return ms;
+}
+
 function registerHopsRoute(path, options) {
   var propagateError = options.propagateError;
 
@@ -177,6 +185,41 @@ function registerTailErrorScenarioRoutes() {
   registerInternalErrorHopsRoute('/hops');
 }
 
+function registerTailDurationScenarioRoutes() {
+  app.get('/duration', function (req, res) {
+    var delayMs = parseDelayMs(req);
+    sendScenarioResponse(req, res, {
+      endpoint: '/duration',
+      description: 'response delayed by ?ms= query parameter',
+      delayMs: delayMs
+    });
+  });
+
+  app.get('/duration/short', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/duration/short',
+      description: 'short request duration (~50ms), sampled through the 10% cost-reduction rule',
+      delayMs: DURATIONS.short
+    });
+  });
+
+  app.get('/duration/medium', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/duration/medium',
+      description: 'medium request duration (~750ms), sampled at least 50%',
+      delayMs: DURATIONS.medium
+    });
+  });
+
+  app.get('/duration/long', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/duration/long',
+      description: 'long request duration (~1500ms), sampled at 100%',
+      delayMs: DURATIONS.long
+    });
+  });
+}
+
 function registerInternalErrorHopsRoute(path) {
   app.get(path, function (req, res) {
     var hops = parseHops(req);
@@ -228,6 +271,7 @@ app.get('/healthz', function (req, res) {
 
 registerTailSamplingScenarioRoutes();
 registerTailErrorScenarioRoutes();
+registerTailDurationScenarioRoutes();
 
 var server = app.listen(PORT, function () {
   console.log('tail-sampling server running at http://127.0.0.1:' + PORT + '/');

@@ -1,0 +1,48 @@
+# One-off Job: curls tail-sampling-duration endpoints for duration tail-sampling tests.
+# Trigger with: make trigger-duration-curls (from nodejs/tail-sampling)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tail-sampling-duration-curls
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: tail-sampling-duration-curls
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://${TAIL_SAMPLING_DURATION_SERVICE_HOST}:${TAIL_SAMPLING_DURATION_SERVICE_PORT}"
+              echo "BASE_URL=${BASE_URL}"
+
+              call_ok() {
+                curl -sS -f -o /dev/null "${BASE_URL}$1"
+              }
+              call_many_ok() {
+                count=$1
+                path=$2
+                i=1
+                while [ "$i" -le "$count" ]; do
+                  curl -sS -f -o /dev/null "${BASE_URL}${path}"
+                  i=$((i + 1))
+                done
+              }
+
+              call_ok "/healthz"
+              call_ok "/duration?ms=0"
+              call_ok "/duration?ms=600"
+              call_ok "/duration?ms=1200"
+              call_many_ok 30 "/duration/short"
+              call_many_ok 6 "/duration/medium"
+              call_ok "/duration/long"
+              echo "all curls succeeded"

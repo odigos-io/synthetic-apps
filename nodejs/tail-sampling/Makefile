@@ -9,11 +9,14 @@ load-to-kind:
 .PHONY: apply
 apply:
 	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
-	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/k8s.yaml
 	kubectl apply -n nodejs-tail-sampling -f deployments/errors/k8s.yaml
+	kubectl apply -n nodejs-tail-sampling -f deployments/duration/k8s.yaml
+	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/k8s.yaml
 	kubectl apply -n nodejs-tail-sampling -f deployments/errors/odigos-instrument.yaml
-	kubectl apply -n odigos-system -f deployments/tail-sampling/sampling.yaml
+	kubectl apply -n nodejs-tail-sampling -f deployments/duration/odigos-instrument.yaml
 	kubectl apply -n odigos-system -f deployments/errors/sampling.yaml
+	kubectl apply -n odigos-system -f deployments/duration/sampling.yaml
+	kubectl apply -n odigos-system -f deployments/tail-sampling/sampling.yaml
 
 .PHONY: deploy
 deploy:
@@ -33,6 +36,10 @@ call-endpoints:
 .PHONY: call-errors-endpoints
 call-errors-endpoints:
 	./scripts/call-errors-endpoints.sh
+
+.PHONY: call-duration-endpoints
+call-duration-endpoints:
+	./scripts/call-duration-endpoints.sh
 
 # Deletes any prior run and creates a fresh Job that curls tail-sampling endpoints in-cluster.
 .PHONY: trigger-tail-sampling-curls
@@ -64,8 +71,19 @@ trigger-errors-curls:
 		(kubectl logs job/tail-sampling-errors-curls -n nodejs-tail-sampling --tail=200; exit 1)
 	kubectl logs job/tail-sampling-errors-curls -n nodejs-tail-sampling
 
+# Deletes any prior run and creates a fresh Job that curls duration-scenario endpoints in-cluster.
+.PHONY: trigger-duration-curls
+trigger-duration-curls:
+	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
+	kubectl delete job tail-sampling-duration-curls -n nodejs-tail-sampling --ignore-not-found=true
+	kubectl apply -n nodejs-tail-sampling -f deployments/duration/curl-job.yaml
+	kubectl wait --for=condition=complete job/tail-sampling-duration-curls -n nodejs-tail-sampling --timeout=300s || \
+		(kubectl logs job/tail-sampling-duration-curls -n nodejs-tail-sampling --tail=200; exit 1)
+	kubectl logs job/tail-sampling-duration-curls -n nodejs-tail-sampling
+
 .PHONY: clean
 clean:
 	kubectl delete namespace nodejs-tail-sampling --ignore-not-found=true
 	kubectl delete -n odigos-system -f deployments/tail-sampling/sampling.yaml --ignore-not-found=true
 	kubectl delete -n odigos-system -f deployments/errors/sampling.yaml --ignore-not-found=true
+	kubectl delete -n odigos-system -f deployments/duration/sampling.yaml --ignore-not-found=true
