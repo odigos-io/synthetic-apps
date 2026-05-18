@@ -38,140 +38,196 @@ function parseHops(req) {
   return hops;
 }
 
+function registerHopsRoute(path, options) {
+  var propagateError = options.propagateError;
+
+  app.get(path, function (req, res) {
+    var hops = parseHops(req);
+    var isError = shouldReturnError(req);
+    var statusCode = propagateError
+      ? (isError ? 500 : 200)
+      : (hops === 1 && isError ? 500 : 200);
+
+    if (hops === 1) {
+      return res.status(statusCode).json({
+        endpoint: path,
+        description: options.finalHopDescription,
+        hops_remaining: hops,
+        forced_error: isError,
+        status_code: statusCode,
+        error_propagates_to_client: propagateError
+      });
+    }
+
+    var nextPath = path + '?hops=' + (hops - 1) + (isError ? '&error=true' : '');
+    http.get({
+      hostname: '127.0.0.1',
+      port: PORT,
+      path: nextPath
+    }, function (selfRes) {
+      var body = '';
+
+      selfRes.setEncoding('utf8');
+      selfRes.on('data', function (chunk) {
+        body += chunk;
+      });
+      selfRes.on('end', function () {
+        res.status(statusCode).json({
+          endpoint: path,
+          description: options.hopDescription,
+          hops_remaining: hops,
+          next_path: nextPath,
+          forced_error: isError,
+          status_code: statusCode,
+          error_propagates_to_client: propagateError,
+          downstream_status_code: selfRes.statusCode,
+          downstream_body: body
+        });
+      });
+    }).on('error', function (err) {
+      res.status(502).json({
+        endpoint: path,
+        error: err.message
+      });
+    });
+  });
+}
+
+function registerTailSamplingScenarioRoutes() {
+  app.get('/sampling/tail/no-rule', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/sampling/tail/no-rule',
+      description: 'baseline traffic sampled through the 10% cost-reduction rule'
+    });
+  });
+
+  app.get('/sampling/tail/error', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/sampling/tail/error',
+      description: 'tail-sampling error scenario; add ?error=true to force HTTP 500'
+    });
+  });
+
+  app.get('/sampling/tail/duration/short', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/sampling/tail/duration/short',
+      description: 'short request duration, sampled through the 10% cost-reduction rule',
+      delayMs: DURATIONS.short
+    });
+  });
+
+  app.get('/sampling/tail/duration/medium', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/sampling/tail/duration/medium',
+      description: 'medium request duration above 500ms, sampled at 50%',
+      delayMs: DURATIONS.medium
+    });
+  });
+
+  app.get('/sampling/tail/duration/long', function (req, res) {
+    sendScenarioResponse(req, res, {
+      endpoint: '/sampling/tail/duration/long',
+      description: 'long request duration above 1000ms, sampled at 100%',
+      delayMs: DURATIONS.long
+    });
+  });
+
+  registerHopsRoute('/sampling/tail/hops', {
+    propagateError: true,
+    finalHopDescription: 'final hop returns success or error based on the error query parameter',
+    hopDescription: 'hop made an outgoing HTTP request to itself; downstream status is returned to the client'
+  });
+
+  registerHopsRoute('/sampling/tail/hops/non-propagating-error', {
+    propagateError: false,
+    finalHopDescription: 'final hop returns success or error based on the error query parameter',
+    hopDescription: 'hop made an outgoing HTTP request to itself; only the final hop reflects a forced error on the client response'
+  });
+}
+
+var alternateErrorNext = false;
+
+function registerTailErrorScenarioRoutes() {
+  app.get('/ok', function (req, res) {
+    res.status(200).json({
+      endpoint: '/ok',
+      description: 'successful baseline request for cost-reduction tail sampling'
+    });
+  });
+
+  app.get('/error', function (req, res) {
+    res.status(500).json({
+      endpoint: '/error',
+      description: 'handler always returns HTTP 500 for error-focused tail sampling'
+    });
+  });
+
+  app.get('/alternate', function (req, res) {
+    var isError = alternateErrorNext;
+    alternateErrorNext = !alternateErrorNext;
+    var statusCode = isError ? 500 : 200;
+    res.status(statusCode).json({
+      endpoint: '/alternate',
+      description: 'alternates HTTP 200 and 500 on each request (in-process toggle)',
+      returned_error: isError,
+      status_code: statusCode
+    });
+  });
+
+  registerInternalErrorHopsRoute('/hops');
+}
+
+function registerInternalErrorHopsRoute(path) {
+  app.get(path, function (req, res) {
+    var hops = parseHops(req);
+
+    if (hops === 1) {
+      return res.status(500).json({
+        endpoint: path,
+        description: 'final hop always returns HTTP 500 (error on internal span only)',
+        hops_remaining: hops,
+        status_code: 500
+      });
+    }
+
+    var nextPath = path + '?hops=' + (hops - 1);
+    http.get({
+      hostname: '127.0.0.1',
+      port: PORT,
+      path: nextPath
+    }, function (selfRes) {
+      var body = '';
+
+      selfRes.setEncoding('utf8');
+      selfRes.on('data', function (chunk) {
+        body += chunk;
+      });
+      selfRes.on('end', function () {
+        res.status(200).json({
+          endpoint: path,
+          description: 'self HTTP hop; last hop is always 500, caller always gets HTTP 200',
+          hops_remaining: hops,
+          next_path: nextPath,
+          status_code: 200,
+          downstream_status_code: selfRes.statusCode,
+          downstream_body: body
+        });
+      });
+    }).on('error', function (err) {
+      res.status(502).json({
+        endpoint: path,
+        error: err.message
+      });
+    });
+  });
+}
+
 app.get('/healthz', function (req, res) {
   res.status(200).json({ status: 'healthy' });
 });
 
-// Baseline route for the cost-reduction bucket.
-app.get('/sampling/tail/no-rule', function (req, res) {
-  sendScenarioResponse(req, res, {
-    endpoint: '/sampling/tail/no-rule',
-    description: 'baseline traffic sampled through the 10% cost-reduction rule'
-  });
-});
-
-// Dedicated route for validating error-focused tail sampling. Use ?error=true to return 500.
-app.get('/sampling/tail/error', function (req, res) {
-  sendScenarioResponse(req, res, {
-    endpoint: '/sampling/tail/error',
-    description: 'tail-sampling error scenario; add ?error=true to force HTTP 500'
-  });
-});
-
-app.get('/sampling/tail/duration/short', function (req, res) {
-  sendScenarioResponse(req, res, {
-    endpoint: '/sampling/tail/duration/short',
-    description: 'short request duration, sampled through the 10% cost-reduction rule',
-    delayMs: DURATIONS.short
-  });
-});
-
-app.get('/sampling/tail/duration/medium', function (req, res) {
-  sendScenarioResponse(req, res, {
-    endpoint: '/sampling/tail/duration/medium',
-    description: 'medium request duration above 500ms, sampled at 50%',
-    delayMs: DURATIONS.medium
-  });
-});
-
-app.get('/sampling/tail/duration/long', function (req, res) {
-  sendScenarioResponse(req, res, {
-    endpoint: '/sampling/tail/duration/long',
-    description: 'long request duration above 1000ms, sampled at 100%',
-    delayMs: DURATIONS.long
-  });
-});
-
-app.get('/sampling/tail/hops', function (req, res) {
-  var hops = parseHops(req);
-  var isError = shouldReturnError(req);
-
-  if (hops === 1) {
-    return res.status(isError ? 500 : 200).json({
-      endpoint: '/sampling/tail/hops',
-      description: 'final hop returns success or error based on the error query parameter',
-      hops_remaining: hops,
-      forced_error: isError,
-      status_code: isError ? 500 : 200
-    });
-  }
-
-  var nextPath = '/sampling/tail/hops?hops=' + (hops - 1) + (isError ? '&error=true' : '');
-  http.get({
-    hostname: '127.0.0.1',
-    port: PORT,
-    path: nextPath
-  }, function (selfRes) {
-    var body = '';
-
-    selfRes.setEncoding('utf8');
-    selfRes.on('data', function (chunk) {
-      body += chunk;
-    });
-    selfRes.on('end', function () {
-      res.status(selfRes.statusCode).json({
-        endpoint: '/sampling/tail/hops',
-        description: 'hop made an outgoing HTTP request to itself',
-        hops_remaining: hops,
-        next_path: nextPath,
-        downstream_status_code: selfRes.statusCode,
-        downstream_body: body
-      });
-    });
-  }).on('error', function (err) {
-    res.status(502).json({
-      endpoint: '/sampling/tail/hops',
-      error: err.message
-    });
-  });
-});
-
-app.get('/sampling/tail/hops/non-propagating-error', function (req, res) {
-  var hops = parseHops(req);
-  var isError = shouldReturnError(req);
-  var statusCode = hops === 1 && isError ? 500 : 200;
-
-  if (hops === 1) {
-    return res.status(statusCode).json({
-      endpoint: '/sampling/tail/hops/non-propagating-error',
-      description: 'final hop returns success or error based on the error query parameter',
-      hops_remaining: hops,
-      forced_error: isError,
-      status_code: statusCode
-    });
-  }
-
-  var nextPath = '/sampling/tail/hops/non-propagating-error?hops=' + (hops - 1) + (isError ? '&error=true' : '');
-  http.get({
-    hostname: '127.0.0.1',
-    port: PORT,
-    path: nextPath
-  }, function (selfRes) {
-    var body = '';
-
-    selfRes.setEncoding('utf8');
-    selfRes.on('data', function (chunk) {
-      body += chunk;
-    });
-    selfRes.on('end', function () {
-      res.status(statusCode).json({
-        endpoint: '/sampling/tail/hops/non-propagating-error',
-        description: 'hop made an outgoing HTTP request to itself; only the final hop returns the forced error',
-        hops_remaining: hops,
-        next_path: nextPath,
-        forced_error: isError,
-        status_code: statusCode,
-        downstream_status_code: selfRes.statusCode,
-        downstream_body: body
-      });
-    });
-  }).on('error', function (err) {
-    res.status(502).json({
-      endpoint: '/sampling/tail/hops/non-propagating-error',
-      error: err.message
-    });
-  });
-});
+registerTailSamplingScenarioRoutes();
+registerTailErrorScenarioRoutes();
 
 var server = app.listen(PORT, function () {
   console.log('tail-sampling server running at http://127.0.0.1:' + PORT + '/');
