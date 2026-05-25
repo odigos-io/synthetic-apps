@@ -1,0 +1,59 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: workload-types-daemonset
+  labels:
+    app: workload-types-daemonset
+    workload-type: daemonset
+spec:
+  selector:
+    matchLabels:
+      app: workload-types-daemonset
+  template:
+    metadata:
+      labels:
+        app: workload-types-daemonset
+        workload-type: daemonset
+    spec:
+      containers:
+        - name: workload-types
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-workload-types:workload-types
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: WORKLOAD_KIND
+              value: DaemonSet
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: workload-types-daemonset
+spec:
+  selector:
+    app: workload-types-daemonset
+  ports:
+    - protocol: TCP
+      port: 8080

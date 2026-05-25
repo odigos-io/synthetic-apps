@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-workload-types-statefulset
+  namespace: nodejs-workload-types
+spec:
+  workload:
+    kind: StatefulSet
+    name: workload-types-statefulset
+    namespace: nodejs-workload-types
