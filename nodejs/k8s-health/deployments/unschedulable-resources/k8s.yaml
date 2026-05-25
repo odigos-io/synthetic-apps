@@ -1,0 +1,55 @@
+# Resource requests exceed typical kind node capacity → pod stays Pending.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: unschedulable-resources
+  labels:
+    app: unschedulable-resources
+    k8s-health-scenario: unschedulable-resources
+spec:
+  selector:
+    matchLabels:
+      app: unschedulable-resources
+  template:
+    metadata:
+      labels:
+        app: unschedulable-resources
+        k8s-health-scenario: unschedulable-resources
+    spec:
+      containers:
+        - name: k8s-health
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-k8s-health:k8s-health
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: ok
+          resources:
+            requests:
+              cpu: "1000"
+              memory: 500Gi
+            limits:
+              cpu: "1000"
+              memory: 500Gi
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            periodSeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: unschedulable-resources
+spec:
+  selector:
+    app: unschedulable-resources
+  ports:
+    - protocol: TCP
+      port: 8080

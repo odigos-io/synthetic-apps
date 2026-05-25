@@ -1,0 +1,58 @@
+# Probes succeed initially; the process exits with a known code and stderr message.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: crash-exit
+  labels:
+    app: crash-exit
+    k8s-health-scenario: crash-exit
+spec:
+  selector:
+    matchLabels:
+      app: crash-exit
+  template:
+    metadata:
+      labels:
+        app: crash-exit
+        k8s-health-scenario: crash-exit
+    spec:
+      containers:
+        - name: k8s-health
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-k8s-health:k8s-health
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: crash-exit
+            - name: EXIT_AFTER_MS
+              value: "5000"
+            - name: EXIT_CODE
+              value: "42"
+            - name: EXIT_MESSAGE
+              value: "nodejs-k8s-health intentional exit for crash-loop testing"
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 2
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 2
+            failureThreshold: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: crash-exit
+spec:
+  selector:
+    app: crash-exit
+  ports:
+    - protocol: TCP
+      port: 8080

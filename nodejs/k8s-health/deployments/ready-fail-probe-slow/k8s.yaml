@@ -1,0 +1,53 @@
+# Same as ready-fail-probe-fast but readiness probe tolerates many failures before
+# marking the container not ready, so the pod stays Running longer in a transitional state.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ready-fail-probe-slow
+  labels:
+    app: ready-fail-probe-slow
+    k8s-health-scenario: ready-fail-probe-slow
+spec:
+  selector:
+    matchLabels:
+      app: ready-fail-probe-slow
+  template:
+    metadata:
+      labels:
+        app: ready-fail-probe-slow
+        k8s-health-scenario: ready-fail-probe-slow
+    spec:
+      containers:
+        - name: k8s-health
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-k8s-health:k8s-health
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: live-ok-ready-fail
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10000
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ready-fail-probe-slow
+spec:
+  selector:
+    app: ready-fail-probe-slow
+  ports:
+    - protocol: TCP
+      port: 8080

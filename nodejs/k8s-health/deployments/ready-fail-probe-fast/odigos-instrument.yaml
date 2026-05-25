@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-ready-fail-probe-fast
+  namespace: nodejs-k8s-health
+spec:
+  workload:
+    kind: Deployment
+    name: ready-fail-probe-fast
+    namespace: nodejs-k8s-health

@@ -1,0 +1,35 @@
+# Non-existent image tag to trigger ImagePullBackOff / ErrImagePull.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: invalid-image
+  labels:
+    app: invalid-image
+    k8s-health-scenario: invalid-image
+spec:
+  selector:
+    matchLabels:
+      app: invalid-image
+  template:
+    metadata:
+      labels:
+        app: invalid-image
+        k8s-health-scenario: invalid-image
+    spec:
+      containers:
+        - name: k8s-health
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-k8s-health:nonexistent-tag-for-pull-backoff
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: invalid-image
+spec:
+  selector:
+    app: invalid-image
+  ports:
+    - protocol: TCP
+      port: 8080

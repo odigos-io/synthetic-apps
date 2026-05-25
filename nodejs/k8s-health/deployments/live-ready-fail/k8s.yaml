@@ -1,0 +1,52 @@
+# Both liveness and readiness probes fail; short thresholds cause frequent kubelet restarts.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: live-ready-fail
+  labels:
+    app: live-ready-fail
+    k8s-health-scenario: live-ready-fail
+spec:
+  selector:
+    matchLabels:
+      app: live-ready-fail
+  template:
+    metadata:
+      labels:
+        app: live-ready-fail
+        k8s-health-scenario: live-ready-fail
+    spec:
+      containers:
+        - name: k8s-health
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-k8s-health:k8s-health
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: live-fail-ready-fail
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            periodSeconds: 3
+            timeoutSeconds: 1
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            periodSeconds: 3
+            timeoutSeconds: 1
+            failureThreshold: 2
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: live-ready-fail
+spec:
+  selector:
+    app: live-ready-fail
+  ports:
+    - protocol: TCP
+      port: 8080

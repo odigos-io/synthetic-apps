@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-unschedulable-resources
+  namespace: nodejs-k8s-health
+spec:
+  workload:
+    kind: Deployment
+    name: unschedulable-resources
+    namespace: nodejs-k8s-health
