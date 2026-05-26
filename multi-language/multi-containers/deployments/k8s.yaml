@@ -1,0 +1,130 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ml-multi-containers
+  labels:
+    app: ml-multi-containers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-multi-containers
+  template:
+    metadata:
+      labels:
+        app: ml-multi-containers
+    spec:
+      containers:
+        - name: go
+          image: ghcr.io/odigos-io/synthetic-apps/multi-language-multi-containers-go:multi-containers
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9090
+          env:
+            - name: PORT
+              value: "9090"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9090
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9090
+            periodSeconds: 10
+        - name: nodejs
+          image: ghcr.io/odigos-io/synthetic-apps/multi-language-multi-containers-nodejs:multi-containers
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+        - name: python
+          image: ghcr.io/odigos-io/synthetic-apps/multi-language-multi-containers-python:multi-containers
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8070
+          env:
+            - name: PORT
+              value: "8070"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8070
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8070
+            periodSeconds: 10
+        - name: java
+          image: ghcr.io/odigos-io/synthetic-apps/multi-language-multi-containers-java:multi-containers
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8060
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8060
+            periodSeconds: 5
+            initialDelaySeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8060
+            periodSeconds: 10
+            initialDelaySeconds: 30
+        - name: cpp
+          image: ghcr.io/odigos-io/synthetic-apps/multi-language-multi-containers-cpp:multi-containers
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8050
+          env:
+            - name: PORT
+              value: "8050"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8050
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8050
+            periodSeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ml-multi-containers
+spec:
+  selector:
+    app: ml-multi-containers
+  ports:
+    - name: go
+      port: 9090
+      targetPort: 9090
+    - name: nodejs
+      port: 8080
+      targetPort: 8080
+    - name: python
+      port: 8070
+      targetPort: 8070
+    - name: java
+      port: 8060
+      targetPort: 8060
+    - name: cpp
+      port: 8050
+      targetPort: 8050

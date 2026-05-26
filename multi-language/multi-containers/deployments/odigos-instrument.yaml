@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-ml-multi-containers
+  namespace: multi-language-multi-containers
+spec:
+  workload:
+    kind: Deployment
+    name: ml-multi-containers
+    namespace: multi-language-multi-containers
