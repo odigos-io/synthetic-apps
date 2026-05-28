@@ -1,0 +1,103 @@
+# One-off Job: curls both url-templatization deployments for trace comparison.
+# Trigger with: make trigger-url-templatization-curls (from nodejs/url-templatization)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: url-templatization-curls
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: url-templatization-curls
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              PREFIX_FRAMEWORK="/http-framework"
+              PREFIX_PLAIN="/plain-http"
+
+              curl_all_endpoints() {
+                base_url="$$1"
+                label="$$2"
+                echo ""
+                echo "========== $${label} BASE_URL=$${base_url} =========="
+              call_ok() {
+                curl -sS -f -o /dev/null "$${base_url}$$1"
+              }
+              call_expect_status() {
+                path="$$1"
+                expected="$$2"
+                code=$$(curl -sS -o /dev/null -w "%{http_code}" "$${base_url}$${path}")
+                if [ "$$code" != "$$expected" ]; then
+                  echo "expected HTTP $$expected for $${path} got $$code" >&2
+                  exit 1
+                fi
+              }
+                call_many_ok() {
+                  count=$$1
+                  path=$$2
+                  echo "GET $${base_url}$${path} x$${count}"
+                  i=1
+                  while [ $$i -le $$count ]; do
+                    call_ok "$$path"
+                    i=$$((i + 1))
+                  done
+                }
+
+                echo "GET $${base_url}/healthz"
+                call_ok "/healthz"
+
+                call_ok "$${PREFIX_FRAMEWORK}/default"
+                call_many_ok 10 "$${PREFIX_FRAMEWORK}/default/static/a"
+                call_many_ok 10 "$${PREFIX_FRAMEWORK}/default/static/a/b"
+                call_many_ok 10 "$${PREFIX_FRAMEWORK}/default/static/a/b/c"
+                call_many_ok 10 "$${PREFIX_FRAMEWORK}/default/templated/1/foo"
+                call_many_ok 10 "$${PREFIX_FRAMEWORK}/default/templated/2/foo/bar"
+                call_many_ok 10 "$${PREFIX_FRAMEWORK}/default/templated/3/foo/bar/baz"
+
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/all"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static/1"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static/2"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static/3"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated/1"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated/2"
+                call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated/3"
+
+                call_ok "$${PREFIX_PLAIN}/default"
+                call_many_ok 10 "$${PREFIX_PLAIN}/default/static/a"
+                call_many_ok 10 "$${PREFIX_PLAIN}/default/static/a/b"
+                call_many_ok 10 "$${PREFIX_PLAIN}/default/static/a/b/c"
+                call_many_ok 10 "$${PREFIX_PLAIN}/default/templated/1/foo"
+                call_many_ok 10 "$${PREFIX_PLAIN}/default/templated/2/foo/bar"
+                call_many_ok 10 "$${PREFIX_PLAIN}/default/templated/3/foo/bar/baz"
+
+                call_ok "$${PREFIX_PLAIN}/default/outbound/static"
+                call_ok "$${PREFIX_PLAIN}/default/outbound/templated"
+                call_ok "$${PREFIX_PLAIN}/default/outbound/all"
+
+                echo "GET $${base_url}$${PREFIX_FRAMEWORK}/default/errors/404 (expect 404)"
+                call_expect_status "$${PREFIX_FRAMEWORK}/default/errors/404" "404"
+                echo "GET $${base_url}$${PREFIX_FRAMEWORK}/default/errors/500 (expect 500)"
+                call_expect_status "$${PREFIX_FRAMEWORK}/default/errors/500" "500"
+                echo "GET $${base_url}$${PREFIX_PLAIN}/default/errors/404 (expect 404)"
+                call_expect_status "$${PREFIX_PLAIN}/default/errors/404" "404"
+                echo "GET $${base_url}$${PREFIX_PLAIN}/default/errors/500 (expect 500)"
+                call_expect_status "$${PREFIX_PLAIN}/default/errors/500" "500"
+              }
+
+              curl_all_endpoints "http://url-templatization:8080" "default-templatization ON"
+              curl_all_endpoints "http://url-templatization-disabled:8080" "default-templatization OFF"
+              curl_all_endpoints "http://url-templatization-multi-rules:8080" "multi-rules (3 conflicting Actions)"
+              echo ""
+              echo "all curls succeeded"

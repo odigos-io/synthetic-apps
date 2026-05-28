@@ -1,0 +1,25 @@
+# Enables default URL templatization for Deployment url-templatization.
+# Apply with: kubectl apply -n odigos-system -f deployments/url-templatization/url-templatization-action.yaml
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-default
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-default
+  notes: >-
+    Default URL templatization enabled for Deployment url-templatization in
+    nodejs-url-templatization (nodejs/javascript synthetic app).
+  signals:
+    - TRACES
+  urlTemplatization:
+    templatizationRulesGroups: []
+    defaultTemplatization:
+      - sourcesScopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization
+              namespace: nodejs-url-templatization
+          languages:
+            - javascript
+        defaultTemplatization: {}

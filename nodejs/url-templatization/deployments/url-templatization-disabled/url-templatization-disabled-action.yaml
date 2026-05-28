@@ -1,0 +1,27 @@
+# Disables default URL templatization for Deployment url-templatization-disabled.
+# Apply with: kubectl apply -n odigos-system -f deployments/url-templatization-disabled/url-templatization-disabled-action.yaml
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-disabled
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-disabled
+  notes: >-
+    Default URL templatization disabled for Deployment url-templatization-disabled
+    in nodejs-url-templatization. Use alongside url-templatization (enabled) to
+    compare traces with and without templatization.
+  signals:
+    - TRACES
+  urlTemplatization:
+    templatizationRulesGroups: []
+    defaultTemplatization:
+      - sourcesScopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-disabled
+              namespace: nodejs-url-templatization
+          languages:
+            - javascript
+        defaultTemplatization:
+          enabled: true
