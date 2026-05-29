@@ -16,11 +16,11 @@ apply:
 	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization/odigos-instrument.yaml
 	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-disabled/k8s.yaml
 	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-disabled/odigos-instrument.yaml
-	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-multi-rules/k8s.yaml
-	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-multi-rules/odigos-instrument.yaml
+	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-skip-status-codes/k8s.yaml
+	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-skip-status-codes/odigos-instrument.yaml
 	kubectl apply -n odigos-system -f deployments/url-templatization/url-templatization-action.yaml
 	kubectl apply -n odigos-system -f deployments/url-templatization-disabled/url-templatization-disabled-action.yaml
-	kubectl apply -n odigos-system -f deployments/url-templatization-multi-rules/multi-rules-actions.yaml
+	kubectl apply -n odigos-system -f deployments/url-templatization-skip-status-codes/skip-status-codes-actions.yaml
 
 .PHONY: deploy
 deploy:

@@ -1,0 +1,44 @@
+# Two Actions scoped to url-templatization-skip-status-codes with overlapping skipPolicy.skipHttpStatusCodes.
+# Action 1: 401, 404 — Action 2: 400, 404 (404 appears in both).
+# Expected: default templatization is skipped on 400, 401, and 404; still runs on 500 and 2xx.
+---
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: 'enable-default-templatization-cluster-wide'
+  namespace: odigos-system
+spec:
+  actionName: 'enable default templatization cluster wide'
+  notes: "run default templatization on all endpoints in the cluster, further templatization rules and customization for the default templatization can be applied on a per-action basis"
+  signals:
+    - TRACES
+  urlTemplatization:
+    defaultTemplatization:
+      - sourcesScopes:
+        defaultTemplatization:
+---
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-skip-status-codes-400-404
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-skip-status-codes-400-404
+  notes: skipPolicy.skipHttpStatusCodes 400 and 404 (overlaps previous Action on 404).
+  signals:
+    - TRACES
+  urlTemplatization:
+    templatizationRulesGroups: []
+    defaultTemplatization:
+      - sourcesScopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-skip-status-codes
+              namespace: nodejs-url-templatization
+          languages:
+            - javascript
+        defaultTemplatization:
+          skipPolicy:
+            skipHttpStatusCodes:
+              - 400
+              - 404

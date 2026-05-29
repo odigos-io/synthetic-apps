@@ -1,10 +1,10 @@
 apiVersion: odigos.io/v1alpha1
 kind: Source
 metadata:
-  name: instrument-url-templatization-multi-rules
+  name: instrument-url-templatization-skip-status-codes
   namespace: nodejs-url-templatization
 spec:
   workload:
     kind: Deployment
-    name: url-templatization-multi-rules
+    name: url-templatization-skip-status-codes
     namespace: nodejs-url-templatization

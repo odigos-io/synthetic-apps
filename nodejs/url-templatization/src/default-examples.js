@@ -165,16 +165,28 @@ function fireOutboundRequests(baseUrl, paths, logOutbound) {
 function errorRoutes(prefix) {
   return [
     {
+      id: 'error-400',
+      path: prefix + '/default/errors/400',
+      status: 400,
+      description: 'fixed 400 path for skipPolicy skipHttpStatusCodes templatization tests',
+    },
+    {
+      id: 'error-401',
+      path: prefix + '/default/errors/401',
+      status: 401,
+      description: 'fixed 401 path for skipPolicy skipHttpStatusCodes templatization tests',
+    },
+    {
       id: 'error-404',
       path: prefix + '/default/errors/404',
       status: 404,
-      description: 'fixed 404 path for skipOnError / non-success templatization tests',
+      description: 'fixed 404 path for skipPolicy / non-success templatization tests',
     },
     {
       id: 'error-500',
       path: prefix + '/default/errors/500',
       status: 500,
-      description: 'fixed 500 path for skipOnError / non-success templatization tests',
+      description: 'fixed 500 path for skipPolicy / non-success templatization tests',
     },
   ];
 }

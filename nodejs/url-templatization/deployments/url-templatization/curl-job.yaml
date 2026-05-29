@@ -98,6 +98,6 @@ spec:
 
               curl_all_endpoints "http://url-templatization:8080" "default-templatization ON"
               curl_all_endpoints "http://url-templatization-disabled:8080" "default-templatization OFF"
-              curl_all_endpoints "http://url-templatization-multi-rules:8080" "multi-rules (3 conflicting Actions)"
+              curl_all_endpoints "http://url-templatization-skip-status-codes:8080" "skipPolicy.skipHttpStatusCodes (401/404 + 400/404)"
               echo ""
               echo "all curls succeeded"
