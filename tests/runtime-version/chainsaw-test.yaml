@@ -5,6 +5,9 @@ metadata:
 spec:
   description: This e2e test runs various scenarios to test the lifecycle of the workload
   skipDelete: true
+  bindings:
+    - name: trace_namespace
+      value: traces
   steps:
 
     - name: Download Odigos CLI
@@ -93,8 +96,15 @@ spec:
 
     - name: Install Simple Trace Db
       try:
+        - script:
+            env:
+              - name: TRACE_NAMESPACE
+                value: ($trace_namespace)
+            content: |
+              kubectl create namespace "$TRACE_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
         - apply:
             file: ../common/apply/simple-trace-db-deployment.yaml
+            template: true
 
     - name: Add Destination
       try:
@@ -227,6 +237,7 @@ spec:
         - assert:
             timeout: 1m
             file: ../common/assert/simple-trace-db-running.yaml
+            template: true
         - script:
             timeout: 30s
             content: |

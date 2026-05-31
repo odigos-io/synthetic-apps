@@ -5,17 +5,27 @@
 apiVersion: odigos.io/v1alpha1
 kind: Action
 metadata:
-  name: 'enable-default-templatization-cluster-wide'
+  name: nodejs-url-templatization-skip-status-codes-401-404
   namespace: odigos-system
 spec:
-  actionName: 'enable default templatization cluster wide'
-  notes: "run default templatization on all endpoints in the cluster, further templatization rules and customization for the default templatization can be applied on a per-action basis"
+  actionName: nodejs-url-templatization-skip-status-codes-401-404
+  notes: skipPolicy.skipHttpStatusCodes 401 and 404 for url-templatization-skip-status-codes.
   signals:
     - TRACES
   urlTemplatization:
     defaultTemplatization:
       - sourcesScopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-skip-status-codes
+              namespace: nodejs-url-templatization
+          languages:
+            - javascript
         defaultTemplatization:
+          skipPolicy:
+            skipHttpStatusCodes:
+              - 401
+              - 404
 ---
 apiVersion: odigos.io/v1alpha1
 kind: Action

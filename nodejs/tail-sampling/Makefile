@@ -42,45 +42,21 @@ call-errors-endpoints:
 call-duration-endpoints:
 	./scripts/call-duration-endpoints.sh
 
-# Deletes any prior run and creates a fresh Job that curls tail-sampling endpoints in-cluster.
-.PHONY: trigger-tail-sampling-curls
-trigger-tail-sampling-curls:
+# Deletes any prior run and creates fresh Jobs that curl all deployment endpoints in-cluster.
+.PHONY: trigger
+trigger:
 	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
-	kubectl delete job tail-sampling-curls -n nodejs-tail-sampling --ignore-not-found=true
-	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/curl-job.yaml
-	kubectl wait --for=condition=complete job/tail-sampling-curls -n nodejs-tail-sampling --timeout=300s || \
-		(kubectl logs job/tail-sampling-curls -n nodejs-tail-sampling --tail=200; exit 1)
-	kubectl logs job/tail-sampling-curls -n nodejs-tail-sampling
+	$(MAKE) trigger-job JOB=tail-sampling-curls MANIFEST=deployments/tail-sampling/curl-job.yaml TIMEOUT=300s
+	$(MAKE) trigger-job JOB=tail-sampling-errors-curls MANIFEST=deployments/errors/curl-job.yaml TIMEOUT=180s
+	$(MAKE) trigger-job JOB=tail-sampling-duration-curls MANIFEST=deployments/duration/curl-job.yaml TIMEOUT=300s
 
-# Sample run: one request per scenario, prints response bodies to Job logs (kubectl logs).
-.PHONY: trigger-tail-sampling-sample
-trigger-tail-sampling-sample:
-	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
-	kubectl delete job tail-sampling-curl-sample -n nodejs-tail-sampling --ignore-not-found=true
-	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/curl-sample-job.yaml
-	kubectl wait --for=condition=complete job/tail-sampling-curl-sample -n nodejs-tail-sampling --timeout=180s || \
-		(kubectl logs job/tail-sampling-curl-sample -n nodejs-tail-sampling --tail=200; exit 1)
-	kubectl logs job/tail-sampling-curl-sample -n nodejs-tail-sampling
-
-# Deletes any prior run and creates a fresh Job that curls error-scenario endpoints in-cluster.
-.PHONY: trigger-errors-curls
-trigger-errors-curls:
-	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
-	kubectl delete job tail-sampling-errors-curls -n nodejs-tail-sampling --ignore-not-found=true
-	kubectl apply -n nodejs-tail-sampling -f deployments/errors/curl-job.yaml
-	kubectl wait --for=condition=complete job/tail-sampling-errors-curls -n nodejs-tail-sampling --timeout=180s || \
-		(kubectl logs job/tail-sampling-errors-curls -n nodejs-tail-sampling --tail=200; exit 1)
-	kubectl logs job/tail-sampling-errors-curls -n nodejs-tail-sampling
-
-# Deletes any prior run and creates a fresh Job that curls duration-scenario endpoints in-cluster.
-.PHONY: trigger-duration-curls
-trigger-duration-curls:
-	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
-	kubectl delete job tail-sampling-duration-curls -n nodejs-tail-sampling --ignore-not-found=true
-	kubectl apply -n nodejs-tail-sampling -f deployments/duration/curl-job.yaml
-	kubectl wait --for=condition=complete job/tail-sampling-duration-curls -n nodejs-tail-sampling --timeout=300s || \
-		(kubectl logs job/tail-sampling-duration-curls -n nodejs-tail-sampling --tail=200; exit 1)
-	kubectl logs job/tail-sampling-duration-curls -n nodejs-tail-sampling
+.PHONY: trigger-job
+trigger-job:
+	kubectl delete job $(JOB) -n nodejs-tail-sampling --ignore-not-found=true
+	kubectl apply -n nodejs-tail-sampling -f $(MANIFEST)
+	kubectl wait --for=condition=complete job/$(JOB) -n nodejs-tail-sampling --timeout=$(TIMEOUT) || \
+		(kubectl logs job/$(JOB) -n nodejs-tail-sampling --tail=200; exit 1)
+	kubectl logs job/$(JOB) -n nodejs-tail-sampling
 
 .PHONY: clean
 clean:

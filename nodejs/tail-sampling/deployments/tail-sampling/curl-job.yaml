@@ -1,9 +1,11 @@
 # One-off Job: curls tail-sampling endpoints for trace verification (matches scripts/call-endpoints.sh).
-# Trigger with: make trigger-tail-sampling-curls (from nodejs/tail-sampling)
+# Trigger with: make trigger (from nodejs/tail-sampling)
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: tail-sampling-curls
+  labels:
+    odigos.io/test-infra: "true"
 spec:
   ttlSecondsAfterFinished: 600
   backoffLimit: 2
@@ -11,6 +13,7 @@ spec:
     metadata:
       labels:
         app: tail-sampling-curls
+        odigos.io/test-infra: "true"
     spec:
       restartPolicy: Never
       terminationGracePeriodSeconds: 30
@@ -60,5 +63,5 @@ spec:
               call_ok "/sampling/tail/hops?hops=3"
               call_err "/sampling/tail/hops?hops=3&error=true"
               call_ok "/sampling/tail/hops/non-propagating-error?hops=3"
-              call_err "/sampling/tail/hops/non-propagating-error?hops=3&error=true"
+              call_ok "/sampling/tail/hops/non-propagating-error?hops=3&error=true"
               echo "all curls succeeded"

@@ -1,13 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: traces
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: simple-trace-db
-  namespace: traces
+  namespace: ($trace_namespace)
   labels:
     app: simple-trace-db
 spec:
@@ -18,6 +13,7 @@ spec:
     metadata:
       labels:
         app: simple-trace-db
+        odigos.io/test-infra: "true"
     spec:
       containers:
         - name: simple-trace-db
@@ -30,7 +26,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: simple-trace-db
-  namespace: traces
+  namespace: ($trace_namespace)
 spec:
   selector:
     app: simple-trace-db

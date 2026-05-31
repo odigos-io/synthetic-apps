@@ -1,0 +1,83 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-tail-sampling
+  namespace: (join('-', [$values.language, 'tail-sampling']))
+  ownerReferences:
+    - kind: Deployment
+      name: tail-sampling
+spec:
+  workloadCollectorConfig:
+    - containerName: tail-sampling
+      samplingCollectorConfig:
+        costReductionRules:
+          - id: cdaa23011752a5b1
+            name: cost-reduction-rest
+            percentageAtMost: 10
+        highlyRelevantOperations:
+          - durationAtLeastMs: 500
+            id: bb3ff0ff4b0e5497
+            name: duration-above-500ms
+            percentageAtLeast: 50
+          - error: true
+            id: 0f1698e9c638d29b
+            name: high-relevance-error
+            operation:
+              httpServer:
+                routePrefix: /sampling/tail
+            percentageAtLeast: 100
+          - durationAtLeastMs: 1000
+            id: 78bfe8add07c6bcb
+            name: high-relevance-duration-above-1000ms
+            percentageAtLeast: 100
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-tail-sampling-errors
+  namespace: (join('-', [$values.language, 'tail-sampling']))
+  ownerReferences:
+    - kind: Deployment
+      name: tail-sampling-errors
+spec:
+  workloadCollectorConfig:
+    - containerName: tail-sampling-errors
+      samplingCollectorConfig:
+        costReductionRules:
+          - id: 2776299379c7199c
+            name: cost-reduction-ok-baseline
+            operation:
+              httpServer:
+                route: /ok
+            percentageAtMost: 10
+        highlyRelevantOperations:
+          - error: true
+            id: 9d82dd7a5149133d
+            name: high-relevance-error
+            percentageAtLeast: 100
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-tail-sampling-duration
+  namespace: (join('-', [$values.language, 'tail-sampling']))
+  ownerReferences:
+    - kind: Deployment
+      name: tail-sampling-duration
+spec:
+  workloadCollectorConfig:
+    - containerName: tail-sampling-duration
+      samplingCollectorConfig:
+        costReductionRules:
+          - id: e47b0852274a5645
+            name: cost-reduction-rest
+            percentageAtMost: 10
+        highlyRelevantOperations:
+          - durationAtLeastMs: 500
+            id: 8095630644768ad9
+            name: duration-above-500ms
+            percentageAtLeast: 50
+          - durationAtLeastMs: 1000
+            id: c2a21b6d3fed0463
+            name: high-relevance-duration-above-1000ms
+            percentageAtLeast: 100

@@ -1,1 +1,3 @@
 node_modules
+bin/
+tests/tail-sampling/.trace-sampling-metrics-baseline.json.tmp

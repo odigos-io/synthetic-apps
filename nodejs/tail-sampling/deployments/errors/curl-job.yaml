@@ -1,16 +1,19 @@
 # One-off Job: curls tail-sampling-errors endpoints for error tail-sampling tests.
-# Trigger with: make trigger-errors-curls (from nodejs/tail-sampling)
+# Trigger with: make trigger (from nodejs/tail-sampling)
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: tail-sampling-errors-curls
+  labels:
+    odigos.io/test-infra: "true"
 spec:
   ttlSecondsAfterFinished: 600
-  backoffLimit: 2
+  backoffLimit: 0
   template:
     metadata:
       labels:
         app: tail-sampling-errors-curls
+        odigos.io/test-infra: "true"
     spec:
       restartPolicy: Never
       terminationGracePeriodSeconds: 30

@@ -1,0 +1,181 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Spans exported after tail-sampling-duration-curls job
+  (nodejs/tail-sampling/deployments/duration/curl-job.yaml).
+  Sampling attrs recorded with dryRun enabled (see odigos-sampling-dry-run-config.yaml).
+  Rule IDs match deployments/duration/sampling.yaml / workload-collector-config assert.
+serviceName: tail-sampling-duration
+resourceAttributesEndsWith:
+  k8s.namespace.name: "-tail-sampling"
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: tail-sampling-duration
+  k8s.deployment.name: tail-sampling-duration
+# Keys listed in spanAttributesAbsent must be missing on the matched span (values ignored).
+x-absent-odigos-sampling: &absent_odigos_sampling
+  odigos.sampling.category: ""
+  odigos.sampling.dry_run: ""
+  odigos.sampling.span.matching_rule.id: ""
+  odigos.sampling.span.matching_rule.name: ""
+  odigos.sampling.span.matching_rule.keep_percentage: ""
+  odigos.sampling.trace.deciding_rule.id: ""
+  odigos.sampling.trace.deciding_rule.keep_percentage: ""
+  odigos.sampling.trace.deciding_rule.name: ""
+  odigos.sampling.trace.kept: ""
+spans:
+  - id: healthz
+    description: call_ok /healthz — cost-reduction-rest (10%, span duration below 500ms)
+    samplingDecision: |
+      No duration rule applies (span is far below 500ms). cost-reduction-rest is the catch-all
+      for this workload (percentageAtMost 10%, category cost reduction). dry_run is on;
+      odigos.sampling.trace.kept may be present and is not asserted.
+    kind: server
+    spanAttributes:
+      http.route: /healthz
+      http.status_code: 200
+      odigos.sampling.category: 'cost reduction'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: e47b0852274a5645
+      odigos.sampling.span.matching_rule.name: cost-reduction-rest
+      odigos.sampling.span.matching_rule.keep_percentage: 10
+      odigos.sampling.trace.deciding_rule.id: e47b0852274a5645
+      odigos.sampling.trace.deciding_rule.keep_percentage: 10
+      odigos.sampling.trace.deciding_rule.name: cost-reduction-rest
+    spanStatusError: false
+    expected:
+      count: 1
+
+  - id: duration-ms-0
+    description: call_ok /duration?ms=0 — cost-reduction-rest (10%)
+    samplingDecision: |
+      Explicit 0ms delay; below 500ms so only cost-reduction-rest matches (10%). Distinguished
+      from other /duration calls via http.target containing ms=0.
+    kind: server
+    spanAttributes:
+      http.route: /duration
+      http.status_code: 200
+      odigos.sampling.category: 'cost reduction'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: e47b0852274a5645
+      odigos.sampling.span.matching_rule.name: cost-reduction-rest
+      odigos.sampling.span.matching_rule.keep_percentage: 10
+      odigos.sampling.trace.deciding_rule.id: e47b0852274a5645
+      odigos.sampling.trace.deciding_rule.keep_percentage: 10
+      odigos.sampling.trace.deciding_rule.name: cost-reduction-rest
+    spanAttributesContains:
+      http.target: ms=0
+    spanStatusError: false
+    expected:
+      count: 1
+
+  - id: duration-ms-600
+    description: call_ok /duration?ms=600 — duration-above-500ms (50%)
+    samplingDecision: |
+      Simulated duration 600ms matches duration-above-500ms (percentageAtLeast 50%, highly relevant).
+      Does not reach the 1000ms high-relevance rule. trace.kept may vary under dry run.
+    kind: server
+    spanAttributes:
+      http.route: /duration
+      http.status_code: 200
+      odigos.sampling.category: 'highly relevant'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: 8095630644768ad9
+      odigos.sampling.span.matching_rule.name: duration-above-500ms
+      odigos.sampling.span.matching_rule.keep_percentage: 50
+      odigos.sampling.trace.deciding_rule.id: 8095630644768ad9
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+      odigos.sampling.trace.deciding_rule.name: duration-above-500ms
+    spanAttributesContains:
+      http.target: ms=600
+    spanStatusError: false
+    expected:
+      count: 1
+
+  - id: duration-ms-1200
+    description: call_ok /duration?ms=1200 — high-relevance-duration-above-1000ms (100%)
+    samplingDecision: |
+      Simulated duration 1200ms matches high-relevance-duration-above-1000ms (100% keep). That
+      rule wins over duration-above-500ms for trace deciding. trace.kept is true.
+    kind: server
+    spanAttributes:
+      http.route: /duration
+      http.status_code: 200
+      odigos.sampling.category: 'highly relevant'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: c2a21b6d3fed0463
+      odigos.sampling.span.matching_rule.name: high-relevance-duration-above-1000ms
+      odigos.sampling.span.matching_rule.keep_percentage: 100
+      odigos.sampling.trace.deciding_rule.id: c2a21b6d3fed0463
+      odigos.sampling.trace.deciding_rule.keep_percentage: 100
+      odigos.sampling.trace.deciding_rule.name: high-relevance-duration-above-1000ms
+      odigos.sampling.trace.kept: true
+    spanAttributesContains:
+      http.target: ms=1200
+    spanStatusError: false
+    expected:
+      count: 1
+
+  - id: short-baseline
+    description: call_many_ok 30 /duration/short (~50ms) — cost-reduction-rest (10%)
+    samplingDecision: |
+      Fixed ~50ms handler delay; below 500ms so cost-reduction-rest applies (10%). Same rule as
+      /healthz and ms=0; odigos.sampling.trace.kept may be present and is not asserted.
+    kind: server
+    spanAttributes:
+      http.route: /duration/short
+      http.status_code: 200
+      odigos.sampling.category: 'cost reduction'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: e47b0852274a5645
+      odigos.sampling.span.matching_rule.name: cost-reduction-rest
+      odigos.sampling.span.matching_rule.keep_percentage: 10
+      odigos.sampling.trace.deciding_rule.id: e47b0852274a5645
+      odigos.sampling.trace.deciding_rule.keep_percentage: 10
+      odigos.sampling.trace.deciding_rule.name: cost-reduction-rest
+    spanStatusError: false
+    expected:
+      count: 30
+
+  - id: medium-50pct
+    description: call_many_ok 6 /duration/medium (~750ms) — duration-above-500ms (50%)
+    samplingDecision: |
+      Fixed ~750ms delay matches duration-above-500ms (50%, highly relevant). Below 1000ms so the
+      100% duration rule does not decide the trace. trace.kept may vary under dry run.
+    kind: server
+    spanAttributes:
+      http.route: /duration/medium
+      http.status_code: 200
+      odigos.sampling.category: 'highly relevant'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: 8095630644768ad9
+      odigos.sampling.span.matching_rule.name: duration-above-500ms
+      odigos.sampling.span.matching_rule.keep_percentage: 50
+      odigos.sampling.trace.deciding_rule.id: 8095630644768ad9
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+      odigos.sampling.trace.deciding_rule.name: duration-above-500ms
+    spanStatusError: false
+    expected:
+      count: 6
+
+  - id: long-100pct
+    description: call_ok /duration/long (~1500ms) — high-relevance-duration-above-1000ms (100%)
+    samplingDecision: |
+      Fixed ~1500ms delay matches high-relevance-duration-above-1000ms (100% keep). trace.kept
+      is true.
+    kind: server
+    spanAttributes:
+      http.route: /duration/long
+      http.status_code: 200
+      odigos.sampling.category: 'highly relevant'
+      odigos.sampling.dry_run: true
+      odigos.sampling.span.matching_rule.id: c2a21b6d3fed0463
+      odigos.sampling.span.matching_rule.name: high-relevance-duration-above-1000ms
+      odigos.sampling.span.matching_rule.keep_percentage: 100
+      odigos.sampling.trace.deciding_rule.id: c2a21b6d3fed0463
+      odigos.sampling.trace.deciding_rule.keep_percentage: 100
+      odigos.sampling.trace.deciding_rule.name: high-relevance-duration-above-1000ms
+      odigos.sampling.trace.kept: true
+    spanStatusError: false
+    expected:
+      count: 1

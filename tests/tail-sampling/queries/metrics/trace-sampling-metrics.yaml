@@ -1,0 +1,53 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SamplingTraceMetricsTest
+description: |
+  Expected deltas on otelcol_odigos.sampling.trace.{match,keep,drop}_count_total
+  after tail-sampling-errors-curls and tail-sampling-duration-curls (make trigger).
+  Rule IDs are unique per deployment (see assert/workload-collector-config.yaml).
+  Record baseline immediately before trigger; assert sum(rule id) - baseline per counter.
+  Every rule: delta(keep) + delta(drop) must equal delta(match). Explicit keep/drop values
+  are checked only for deterministic rules (100% or 0% keep); cost-reduction rules assert
+  match and the keep+drop sum invariant only.
+victoriaMetrics:
+  namespace: odigos-system
+  service: odigos-victoriametrics
+  port: 8428
+metrics:
+  match: otelcol_odigos.sampling.trace.match_count_total
+  keep: otelcol_odigos.sampling.trace.keep_count_total
+  drop: otelcol_odigos.sampling.trace.drop_count_total
+rules:
+  - deployment: tail-sampling-errors
+    ruleId: 2776299379c7199c
+    ruleName: cost-reduction-ok-baseline
+    description: 30x GET /ok (10% cost reduction, dry run; keep/drop not asserted)
+    expected:
+      match: 30
+  - deployment: tail-sampling-errors
+    ruleId: 9d82dd7a5149133d
+    ruleName: high-relevance-error
+    description: /error, /alternate (500), /hops internal error (100% keep)
+    expected:
+      match: 3
+      keep: 3
+      drop: 0
+  - deployment: tail-sampling-duration
+    ruleId: e47b0852274a5645
+    ruleName: cost-reduction-rest
+    description: /healthz, /duration?ms=0, 30x /duration/short (10% cost reduction; keep/drop not asserted)
+    expected:
+      match: 32
+  - deployment: tail-sampling-duration
+    ruleId: 8095630644768ad9
+    ruleName: duration-above-500ms
+    description: /duration?ms=600, 6x /duration/medium (50% at least)
+    expected:
+      match: 9
+  - deployment: tail-sampling-duration
+    ruleId: c2a21b6d3fed0463
+    ruleName: high-relevance-duration-above-1000ms
+    description: /duration?ms=1200, /duration/long (100% keep)
+    expected:
+      match: 2
+      keep: 2
+      drop: 0
