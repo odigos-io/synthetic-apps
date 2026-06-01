@@ -1,0 +1,53 @@
+# Exits 2 minutes after ODIGOS_DISTRO_NAME is detected.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: crash-on-odigos-delayed
+  labels:
+    app: crash-on-odigos-delayed
+    agent-stability-scenario: crash-on-odigos-delayed
+spec:
+  selector:
+    matchLabels:
+      app: crash-on-odigos-delayed
+  template:
+    metadata:
+      labels:
+        app: crash-on-odigos-delayed
+        agent-stability-scenario: crash-on-odigos-delayed
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-agent-stability:agent-stability
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: crash-on-odigos-delayed
+            - name: CRASH_AFTER_MS
+              value: "120000"
+            - name: CONTAINER_NAME
+              value: app
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 6
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: crash-on-odigos-delayed
+spec:
+  selector:
+    app: crash-on-odigos-delayed
+  ports:
+    - protocol: TCP
+      port: 8080

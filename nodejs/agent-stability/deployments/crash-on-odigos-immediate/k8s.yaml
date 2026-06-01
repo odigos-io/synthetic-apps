@@ -1,0 +1,52 @@
+# Exits as soon as ODIGOS_DISTRO_NAME appears (typical post-instrumentation pod restart).
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: crash-on-odigos-immediate
+  labels:
+    app: crash-on-odigos-immediate
+    agent-stability-scenario: crash-on-odigos-immediate
+spec:
+  selector:
+    matchLabels:
+      app: crash-on-odigos-immediate
+  template:
+    metadata:
+      labels:
+        app: crash-on-odigos-immediate
+        agent-stability-scenario: crash-on-odigos-immediate
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-agent-stability:agent-stability
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: crash-on-odigos-immediate
+            - name: CONTAINER_NAME
+              value: app
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: crash-on-odigos-immediate
+spec:
+  selector:
+    app: crash-on-odigos-immediate
+  ports:
+    - protocol: TCP
+      port: 8080

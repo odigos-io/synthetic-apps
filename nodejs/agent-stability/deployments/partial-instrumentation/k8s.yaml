@@ -1,0 +1,81 @@
+# Two Node.js containers: one rejects instrumentation, one tolerates it.
+# Odigos should still instrument the workload when at least one container is viable.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: partial-instrumentation
+  labels:
+    app: partial-instrumentation
+    agent-stability-scenario: partial-instrumentation
+spec:
+  selector:
+    matchLabels:
+      app: partial-instrumentation
+  template:
+    metadata:
+      labels:
+        app: partial-instrumentation
+        agent-stability-scenario: partial-instrumentation
+    spec:
+      containers:
+        - name: odigos-sensitive
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-agent-stability:agent-stability
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SCENARIO
+              value: crash-on-odigos-immediate
+            - name: CONTAINER_NAME
+              value: odigos-sensitive
+            - name: PORT
+              value: "8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+        - name: stable-peer
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-agent-stability:agent-stability
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SCENARIO
+              value: stable
+            - name: CONTAINER_NAME
+              value: stable-peer
+            - name: PORT
+              value: "8081"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            periodSeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: partial-instrumentation
+spec:
+  selector:
+    app: partial-instrumentation
+  ports:
+    - name: sensitive
+      port: 8080
+      targetPort: 8080
+    - name: stable
+      port: 8081
+      targetPort: 8081

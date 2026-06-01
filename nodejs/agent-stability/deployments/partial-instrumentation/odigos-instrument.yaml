@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-partial-instrumentation
+  namespace: nodejs-agent-stability
+spec:
+  workload:
+    kind: Deployment
+    name: partial-instrumentation
+    namespace: nodejs-agent-stability

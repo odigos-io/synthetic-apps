@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-crash-on-odigos-delayed
+  namespace: nodejs-agent-stability
+spec:
+  workload:
+    kind: Deployment
+    name: crash-on-odigos-delayed
+    namespace: nodejs-agent-stability
