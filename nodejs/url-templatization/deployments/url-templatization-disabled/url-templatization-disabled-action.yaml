@@ -14,14 +14,12 @@ spec:
   signals:
     - TRACES
   urlTemplatization:
-    templatizationRulesGroups: []
-    defaultTemplatization:
-      - sourcesScopes:
+    default:
+      - scopes:
           sources:
             - kind: Deployment
               name: url-templatization-disabled
               namespace: nodejs-url-templatization
           languages:
             - javascript
-        defaultTemplatization:
-          enabled: true
+        disabled: true

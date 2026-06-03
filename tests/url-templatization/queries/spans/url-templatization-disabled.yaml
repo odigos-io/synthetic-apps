@@ -1,0 +1,45 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Spans from url-templatization-disabled deployment (default URL templatization disabled).
+  Same curl traffic as the enabled deployment; plain-http paths should keep literal segments
+  on http.target instead of a wildcard http.route from Odigos templatization.
+serviceName: url-templatization-disabled
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: url-templatization-disabled
+  k8s.deployment.name: url-templatization-disabled
+  k8s.namespace.name: nodejs-url-templatization
+spans:
+  - id: healthz
+    description: GET /healthz
+    kind: server
+    spanAttributes:
+      http.route: /healthz
+      http.status_code: 200
+    expected:
+      count: 1
+
+  - id: plain-http-templated-1-literal
+    description: |
+      GET /plain-http/default/templated/1/foo x10 — templatization disabled; expect the concrete
+      path segment on http.target (high-cardinality request URL).
+    kind: server
+    spanAttributes:
+      http.status_code: 200
+    spanAttributesContains:
+      http.target: /plain-http/default/templated/1/foo
+    expected:
+      minimum: 10
+
+  - id: http-framework-templated-1-express
+    description: |
+      GET /http-framework/default/templated/1/foo x10 — Express still provides :seg1 http.route
+      even when Odigos default templatization is disabled.
+    kind: server
+    spanAttributes:
+      http.status_code: 200
+    spanAttributesContains:
+      http.route: /default/templated/1/:seg1
+    expected:
+      minimum: 10

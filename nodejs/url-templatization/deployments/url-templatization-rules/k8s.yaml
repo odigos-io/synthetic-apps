@@ -1,0 +1,50 @@
+# Same app as url-templatization; custom urlTemplatization.rules applied via Action scope.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: url-templatization-rules
+  labels:
+    app: url-templatization-rules
+    url-templatization-scenario: rules
+spec:
+  selector:
+    matchLabels:
+      app: url-templatization-rules
+  template:
+    metadata:
+      labels:
+        app: url-templatization-rules
+        url-templatization-scenario: rules
+    spec:
+      containers:
+        - name: url-templatization
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-url-templatization:url-templatization
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SELF_HOST
+              value: "127.0.0.1"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: url-templatization-rules
+spec:
+  selector:
+    app: url-templatization-rules
+  ports:
+    - protocol: TCP
+      port: 8080

@@ -1,0 +1,29 @@
+# Custom urlTemplatization.rules for Deployment url-templatization-rules (single Action).
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-rules
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-rules
+  notes: >-
+    Custom URL templatization rules for Deployment url-templatization-rules
+    in nodejs-url-templatization.
+  signals:
+    - TRACES
+  urlTemplatization:
+    rules:
+      - scopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-rules
+              namespace: nodejs-url-templatization
+          languages:
+            - javascript
+        templates:
+          - '/http-framework/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}'
+          - '/plain-http/default/templated/{num-id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}/{id}'

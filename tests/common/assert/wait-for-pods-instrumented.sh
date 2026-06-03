@@ -8,7 +8,8 @@
 
 set -eu
 
-NAMESPACE="${NAMESPACE:-${1:-}}"
+# TESTS_NAMESPACE avoids clashing with Chainsaw's own NAMESPACE env (ephemeral test ns).
+NAMESPACE="${NAMESPACE:-${TESTS_NAMESPACE:-${1:-}}}"
 if [ -z "${NAMESPACE}" ]; then
   echo "NAMESPACE is required (env var or first argument)" >&2
   exit 2

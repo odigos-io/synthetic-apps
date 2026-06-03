@@ -1,0 +1,83 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-url-templatization
+  namespace: ($tests_namespace)
+  ownerReferences:
+    - kind: Deployment
+      name: url-templatization
+spec:
+  workloadCollectorConfig:
+    - containerName: url-templatization
+      urlTemplatization:
+        default: {}
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-url-templatization-disabled
+  namespace: ($tests_namespace)
+  ownerReferences:
+    - kind: Deployment
+      name: url-templatization-disabled
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-url-templatization-skip-status-codes
+  namespace: ($tests_namespace)
+  ownerReferences:
+    - kind: Deployment
+      name: url-templatization-skip-status-codes
+spec:
+  workloadCollectorConfig:
+    - containerName: url-templatization
+      urlTemplatization:
+        default:
+          skipPolicy:
+            skipHttpStatusCodes:
+              - 400
+              - 401
+              - 404
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-url-templatization-rules
+  namespace: ($tests_namespace)
+  ownerReferences:
+    - kind: Deployment
+      name: url-templatization-rules
+spec:
+  workloadCollectorConfig:
+    - containerName: url-templatization
+      urlTemplatization:
+        default: {}
+        templatizationRules:
+          - '/http-framework/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}'
+          - '/plain-http/default/templated/{num-id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}/{id}'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-url-templatization-rules-merge
+  namespace: ($tests_namespace)
+  ownerReferences:
+    - kind: Deployment
+      name: url-templatization-rules-merge
+spec:
+  workloadCollectorConfig:
+    - containerName: url-templatization
+      urlTemplatization:
+        default: {}
+        templatizationRules:
+          - '/http-framework/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}'
+          - '/plain-http/default/templated/{num-id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}/{id}'

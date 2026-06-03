@@ -18,9 +18,15 @@ apply:
 	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-disabled/odigos-instrument.yaml
 	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-skip-status-codes/k8s.yaml
 	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-skip-status-codes/odigos-instrument.yaml
+	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-rules/k8s.yaml
+	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-rules/odigos-instrument.yaml
+	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-rules-merge/k8s.yaml
+	kubectl apply -n $(NAMESPACE) -f deployments/url-templatization-rules-merge/odigos-instrument.yaml
 	kubectl apply -n odigos-system -f deployments/url-templatization/url-templatization-action.yaml
 	kubectl apply -n odigos-system -f deployments/url-templatization-disabled/url-templatization-disabled-action.yaml
 	kubectl apply -n odigos-system -f deployments/url-templatization-skip-status-codes/skip-status-codes-actions.yaml
+	kubectl apply -n odigos-system -f deployments/url-templatization-rules/rules-action.yaml
+	kubectl apply -n odigos-system -f deployments/url-templatization-rules-merge/rules-merge-actions.yaml
 
 .PHONY: deploy
 deploy:
@@ -38,7 +44,9 @@ call-endpoints:
 	./scripts/call-endpoints.sh
 
 # Deletes any prior run and creates a fresh Job that curls url-templatization endpoints in-cluster.
-.PHONY: trigger-url-templatization-curls
+.PHONY: trigger trigger-url-templatization-curls
+trigger: trigger-url-templatization-curls
+
 trigger-url-templatization-curls:
 	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kubectl delete job url-templatization-curls -n $(NAMESPACE) --ignore-not-found=true

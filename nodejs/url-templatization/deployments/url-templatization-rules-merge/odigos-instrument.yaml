@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-url-templatization-rules-merge
+  namespace: nodejs-url-templatization
+spec:
+  workload:
+    kind: Deployment
+    name: url-templatization-rules-merge
+    namespace: nodejs-url-templatization

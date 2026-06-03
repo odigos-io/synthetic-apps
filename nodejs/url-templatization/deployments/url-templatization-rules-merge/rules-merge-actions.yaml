@@ -1,0 +1,110 @@
+# Three Actions scoped to url-templatization-rules-merge with subsets of urlTemplatization.rules.
+# Duplicates are intentional (within an Action and across Actions) to verify merge deduplication.
+# Action 1: http-framework 1–2 segment + plain-http 1-segment (intra-Action dupes).
+# Action 2: plain-http 1–2 segment + http-framework 1-segment (cross-Action + intra-Action dupes).
+# Action 3: plain-http 3–4 segment + repeats of rules from Actions 1–2.
+# Expected merged templatizationRules: six unique templates; see workload-collector-config assert.
+---
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-rules-merge-framework-plain-1
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-rules-merge-framework-plain-1
+  notes: >-
+    Custom rules: http-framework templated paths and plain-http 1-segment for
+    url-templatization-rules-merge (includes duplicate templates in this Action).
+  signals:
+    - TRACES
+  urlTemplatization:
+    rules:
+      - scopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-rules-merge
+              namespace: nodejs-url-templatization
+        templates:
+          - '/http-framework/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}'
+          - '/plain-http/default/templated/{num-id}'
+---
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-rules-merge-plain-1-2
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-rules-merge-plain-1-2
+  notes: >-
+    Custom rules: plain-http 1–2 segment and http-framework 1-segment (overlaps Action 1;
+    plain-http 2-segment listed twice in this Action).
+  signals:
+    - TRACES
+  urlTemplatization:
+    rules:
+      - scopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-rules-merge
+              namespace: nodejs-url-templatization
+        templates:
+          - '/plain-http/default/templated/{num-id}'
+          - '/plain-http/default/templated/{num-id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}'
+          - '/http-framework/default/templated/{num-id}/{id}'
+---
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-rules-merge-plain-3-4
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-rules-merge-plain-3-4
+  notes: >-
+    Custom rules: plain-http 3–4 segment (intra-Action dupes) plus repeats of templates
+    already contributed by Actions 1–2.
+  signals:
+    - TRACES
+  urlTemplatization:
+    rules:
+      - scopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-rules-merge
+              namespace: nodejs-url-templatization
+        templates:
+          - '/plain-http/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}/{id}/{id}/{id}'
+          - '/plain-http/default/templated/{num-id}'
+          - '/http-framework/default/templated/{num-id}/{id}/{id}'
+---
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: nodejs-url-templatization-rules-merge-disabled
+  namespace: odigos-system
+spec:
+  actionName: nodejs-url-templatization-rules-merge-disabled
+  disabled: true
+  notes: >-
+    Custom rules: http-framework templated paths and plain-http 1-segment for
+    url-templatization-rules-merge (includes duplicate templates in this Action).
+  signals:
+    - TRACES
+  urlTemplatization:
+    rules:
+      - scopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization-rules-merge
+              namespace: nodejs-url-templatization
+        templates:
+          - '/this/rule/should/not/show/up/disabled/action'
+  

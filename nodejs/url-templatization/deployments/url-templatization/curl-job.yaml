@@ -4,6 +4,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: url-templatization-curls
+  labels:
+    odigos.io/test-infra: "true"
 spec:
   ttlSecondsAfterFinished: 600
   backoffLimit: 2
@@ -11,6 +13,7 @@ spec:
     metadata:
       labels:
         app: url-templatization-curls
+        odigos.io/test-infra: "true"
     spec:
       restartPolicy: Never
       terminationGracePeriodSeconds: 30
@@ -99,5 +102,7 @@ spec:
               curl_all_endpoints "http://url-templatization:8080" "default-templatization ON"
               curl_all_endpoints "http://url-templatization-disabled:8080" "default-templatization OFF"
               curl_all_endpoints "http://url-templatization-skip-status-codes:8080" "skipPolicy.skipHttpStatusCodes (401/404 + 400/404)"
+              curl_all_endpoints "http://url-templatization-rules:8080" "custom urlTemplatization.rules (single Action)"
+              curl_all_endpoints "http://url-templatization-rules-merge:8080" "custom urlTemplatization.rules (3 Actions merged)"
               echo ""
               echo "all curls succeeded"
