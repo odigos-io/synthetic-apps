@@ -1,0 +1,19 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Spans from url-templatization-skip-status-codes deployment (merged skipHttpStatusCodes).
+serviceName: url-templatization-skip-status-codes
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: url-templatization-skip-status-codes
+  k8s.deployment.name: url-templatization-skip-status-codes
+  k8s.namespace.name: nodejs-url-templatization
+spans:
+  - id: plain-http-default
+    description: GET /plain-http/default (curl job route index)
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default
+      http.status_code: 200
+    expected:
+      minimum: 1

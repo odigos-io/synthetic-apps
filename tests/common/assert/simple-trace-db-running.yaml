@@ -4,4 +4,5 @@ metadata:
   name: simple-trace-db
   namespace: ($trace_namespace)
 status:
+  replicas: 1
   readyReplicas: 1
