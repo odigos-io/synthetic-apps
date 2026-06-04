@@ -52,11 +52,21 @@ trigger:
 
 .PHONY: trigger-job
 trigger-job:
+ifndef JOB
+	@$(MAKE) trigger
+else
+ifndef MANIFEST
+	$(error trigger-job requires MANIFEST=... and TIMEOUT=... (or run 'make trigger'))
+endif
+ifndef TIMEOUT
+	$(error trigger-job requires TIMEOUT=... (or run 'make trigger'))
+endif
 	kubectl delete job $(JOB) -n nodejs-tail-sampling --ignore-not-found=true
 	kubectl apply -n nodejs-tail-sampling -f $(MANIFEST)
 	kubectl wait --for=condition=complete job/$(JOB) -n nodejs-tail-sampling --timeout=$(TIMEOUT) || \
 		(kubectl logs job/$(JOB) -n nodejs-tail-sampling --tail=200; exit 1)
 	kubectl logs job/$(JOB) -n nodejs-tail-sampling
+endif
 
 .PHONY: clean
 clean:
