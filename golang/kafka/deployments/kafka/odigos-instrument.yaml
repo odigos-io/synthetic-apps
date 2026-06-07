@@ -1,0 +1,21 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-kafka-producer
+  namespace: golang-kafka
+spec:
+  workload:
+    kind: Deployment
+    name: kafka-producer
+    namespace: golang-kafka
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-kafka-consumer
+  namespace: golang-kafka
+spec:
+  workload:
+    kind: Deployment
+    name: kafka-consumer
+    namespace: golang-kafka

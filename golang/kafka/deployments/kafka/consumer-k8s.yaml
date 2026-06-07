@@ -1,0 +1,64 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kafka-consumer
+  labels:
+    app: kafka-consumer
+spec:
+  selector:
+    matchLabels:
+      app: kafka-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-consumer
+    spec:
+      containers:
+        - name: kafka-consumer
+          image: ghcr.io/odigos-io/synthetic-apps/golang-kafka:kafka
+          imagePullPolicy: IfNotPresent
+          command: ["./consumer"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: KAFKA_BROKERS
+              value: "kafka-broker:9092"
+            - name: KAFKA_TOPICS
+              value: "synthetic-kafka-a,synthetic-kafka-b,synthetic-kafka-c"
+            - name: KAFKA_GROUP_ID
+              value: "golang-kafka-group"
+            - name: KAFKA_CLIENT_ID
+              value: "golang-kafka-consumer"
+            - name: PROCESS_DELAY_MS
+              value: "25"
+            - name: STARTUP_DELAY_MS
+              value: "10000"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kafka-consumer
+spec:
+  selector:
+    app: kafka-consumer
+  ports:
+    - protocol: TCP
+      port: 8080

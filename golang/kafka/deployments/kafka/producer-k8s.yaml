@@ -1,0 +1,62 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kafka-producer
+  labels:
+    app: kafka-producer
+spec:
+  selector:
+    matchLabels:
+      app: kafka-producer
+  template:
+    metadata:
+      labels:
+        app: kafka-producer
+    spec:
+      containers:
+        - name: kafka-producer
+          image: ghcr.io/odigos-io/synthetic-apps/golang-kafka:kafka
+          imagePullPolicy: IfNotPresent
+          command: ["./producer"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: KAFKA_BROKERS
+              value: "kafka-broker:9092"
+            - name: KAFKA_TOPICS
+              value: "synthetic-kafka-a,synthetic-kafka-b,synthetic-kafka-c"
+            - name: KAFKA_CLIENT_ID
+              value: "golang-kafka-producer"
+            - name: PRODUCE_INTERVAL_MS
+              value: "5000"
+            - name: STARTUP_DELAY_MS
+              value: "8000"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kafka-producer
+spec:
+  selector:
+    app: kafka-producer
+  ports:
+    - protocol: TCP
+      port: 8080

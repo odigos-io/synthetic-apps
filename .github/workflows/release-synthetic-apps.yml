@@ -94,6 +94,9 @@ jobs:
           - deploymenttype: versionunsupported
             language: golang
             scenario: httpserver
+          - deploymenttype: kafka
+            language: golang
+            scenario: kafka
     runs-on: ubuntu-latest
     steps:
       - name: Store new version in env
