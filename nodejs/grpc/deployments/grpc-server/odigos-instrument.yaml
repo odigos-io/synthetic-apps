@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-grpc-server
+  namespace: nodejs-grpc
+spec:
+  workload:
+    kind: Deployment
+    name: grpc-server
+    namespace: nodejs-grpc

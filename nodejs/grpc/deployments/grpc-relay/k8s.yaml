@@ -1,0 +1,65 @@
+# Inbound gRPC server that makes an outbound call to self (server -> client -> server).
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: grpc-relay
+  labels:
+    app: grpc-relay
+spec:
+  selector:
+    matchLabels:
+      app: grpc-relay
+  template:
+    metadata:
+      labels:
+        app: grpc-relay
+    spec:
+      containers:
+        - name: grpc-relay
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-grpc:grpc
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GRPC_ENABLE_SERVER
+              value: "true"
+            - name: GRPC_ENABLE_CLIENT
+              value: "false"
+            - name: GRPC_ENABLE_RELAY
+              value: "true"
+            - name: GRPC_PEER_ADDRESS
+              value: "127.0.0.1:50051"
+            - name: GRPC_PORT
+              value: "50051"
+            - name: PORT
+              value: "8080"
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 50051
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: grpc-relay
+spec:
+  selector:
+    app: grpc-relay
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+    - name: grpc
+      protocol: TCP
+      port: 50051

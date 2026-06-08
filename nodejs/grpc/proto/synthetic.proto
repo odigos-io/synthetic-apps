@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package synthetic;
+
+service SyntheticService {
+  rpc Unary (UnaryRequest) returns (UnaryResponse);
+  rpc Relay (RelayRequest) returns (RelayResponse);
+  rpc StreamNumbers (StreamRequest) returns (stream StreamItem);
+  rpc ClientStreamSum (stream StreamItem) returns (StreamSummary);
+  rpc BidiEcho (stream StreamItem) returns (stream StreamItem);
+}
+
+message UnaryRequest {
+  string message = 1;
+}
+
+message UnaryResponse {
+  string message = 1;
+  int64 timestamp_ms = 2;
+}
+
+message RelayRequest {
+  string message = 1;
+}
+
+message RelayResponse {
+  string inbound_message = 1;
+  string outbound_message = 2;
+  int64 timestamp_ms = 3;
+}
+
+message StreamRequest {
+  int32 count = 1;
+}
+
+message StreamItem {
+  int32 sequence = 1;
+  string payload = 2;
+}
+
+message StreamSummary {
+  int32 received_count = 1;
+  int32 sum = 2;
+}

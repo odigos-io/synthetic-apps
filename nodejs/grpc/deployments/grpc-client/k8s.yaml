@@ -1,0 +1,49 @@
+# Periodic outbound gRPC client calls for head-sampling on client spans.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: grpc-client
+  labels:
+    app: grpc-client
+spec:
+  selector:
+    matchLabels:
+      app: grpc-client
+  template:
+    metadata:
+      labels:
+        app: grpc-client
+    spec:
+      containers:
+        - name: grpc-client
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-grpc:grpc
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GRPC_ENABLE_SERVER
+              value: "false"
+            - name: GRPC_ENABLE_CLIENT
+              value: "true"
+            - name: GRPC_ENABLE_RELAY
+              value: "false"
+            - name: GRPC_PEER_ADDRESS
+              value: "grpc-server:50051"
+            - name: GRPC_CLIENT_INTERVAL_MS
+              value: "10000"
+            - name: GRPC_CLIENT_INCLUDE_STREAM
+              value: "true"
+            - name: PORT
+              value: "8080"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3

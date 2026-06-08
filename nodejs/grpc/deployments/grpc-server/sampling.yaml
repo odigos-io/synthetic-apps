@@ -1,0 +1,50 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: nodejs-grpc-server-rules
+  namespace: odigos-system
+spec:
+  name: nodejs grpc-server rules
+  notes: >-
+    Head sampling for inbound gRPC server spans on Deployment grpc-server in
+    nodejs-grpc. Trigger external load with:
+    make trigger-grpc-server-calls
+    Apply with:
+    kubectl apply -n odigos-system -f deployments/grpc-server/sampling.yaml
+  noisyOperations:
+    - name: grpc-server-unary
+      notes: Inbound Unary RPC on synthetic.SyntheticService
+      percentageAtMost: 50
+      operation:
+        grpcServer:
+          service: synthetic.SyntheticService
+          method: Unary
+      sourceScopes: &grpcServerScopes
+        sources:
+          - kind: Deployment
+            name: grpc-server
+            namespace: nodejs-grpc
+    - name: grpc-server-stream-numbers
+      notes: Inbound server-streaming StreamNumbers RPC
+      percentageAtMost: 50
+      operation:
+        grpcServer:
+          service: synthetic.SyntheticService
+          method: StreamNumbers
+      sourceScopes: *grpcServerScopes
+    - name: grpc-server-client-stream-sum
+      notes: Inbound client-streaming ClientStreamSum RPC
+      percentageAtMost: 10
+      operation:
+        grpcServer:
+          service: synthetic.SyntheticService
+          method: ClientStreamSum
+      sourceScopes: *grpcServerScopes
+    - name: grpc-server-bidi-echo
+      notes: Inbound bidirectional BidiEcho RPC
+      percentageAtMost: 10
+      operation:
+        grpcServer:
+          service: synthetic.SyntheticService
+          method: BidiEcho
+      sourceScopes: *grpcServerScopes

@@ -1,0 +1,42 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: nodejs-grpc-relay-rules
+  namespace: odigos-system
+spec:
+  name: nodejs grpc-relay rules
+  notes: >-
+    Head sampling for grpc-relay — inbound Relay server span plus outbound Unary
+    client span to self (127.0.0.1). Trigger with: make trigger-grpc-relay-calls
+    Apply with:
+    kubectl apply -n odigos-system -f deployments/grpc-relay/sampling.yaml
+  noisyOperations:
+    - name: grpc-relay-inbound
+      notes: Inbound Relay RPC (external caller → grpc-relay server span)
+      percentageAtMost: 50
+      operation:
+        grpcServer:
+          service: synthetic.SyntheticService
+          method: Relay
+      sourceScopes: &grpcRelayScopes
+        sources:
+          - kind: Deployment
+            name: grpc-relay
+            namespace: nodejs-grpc
+    - name: grpc-relay-outbound-unary
+      notes: Outbound Unary client span from Relay handler to self
+      percentageAtMost: 50
+      operation:
+        grpcClient:
+          serverAddress: 127.0.0.1
+          service: synthetic.SyntheticService
+          method: Unary
+      sourceScopes: *grpcRelayScopes
+    - name: grpc-relay-inbound-unary
+      notes: Inbound Unary on self after Relay outbound call
+      percentageAtMost: 50
+      operation:
+        grpcServer:
+          service: synthetic.SyntheticService
+          method: Unary
+      sourceScopes: *grpcRelayScopes

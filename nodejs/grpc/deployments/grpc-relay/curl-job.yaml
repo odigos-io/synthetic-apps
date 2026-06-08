@@ -1,0 +1,41 @@
+# One-off Job: triggers Relay RPC on grpc-relay (inbound server + outbound client to self).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: grpc-relay-calls
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: grpc-relay-calls
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: grpcurl
+          image: fullstorydev/grpcurl:v1.9.3-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              TARGET="grpc-relay:50051"
+              echo "TARGET=$${TARGET}"
+              i=1
+              while [ $$i -le 20 ]; do
+                grpcurl -plaintext -import-path /proto -proto synthetic.proto \
+                  -d "{\"message\":\"relay-external-$$i\"}" \
+                  "$${TARGET}" synthetic.SyntheticService/Relay
+                i=$$((i + 1))
+              done
+              echo "all relay grpc calls succeeded"
+          volumeMounts:
+            - name: proto
+              mountPath: /proto
+              readOnly: true
+      volumes:
+        - name: proto
+          configMap:
+            name: grpc-proto

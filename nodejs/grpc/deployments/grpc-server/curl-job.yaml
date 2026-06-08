@@ -1,0 +1,59 @@
+# One-off Job: grpcurl against grpc-server for inbound server-span tests.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: grpc-server-calls
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: grpc-server-calls
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: grpcurl
+          image: fullstorydev/grpcurl:v1.9.3-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              TARGET="grpc-server:50051"
+              PROTO="/proto/synthetic.proto"
+              echo "TARGET=$${TARGET}"
+              call_many() {
+                rpc="$$1"
+                count="$$2"
+                shift 2
+                echo "rpc $${rpc} x$${count}"
+                i=1
+                while [ $$i -le $$count ]; do
+                  grpcurl -plaintext -import-path /proto -proto synthetic.proto \
+                    -d "$$@" "$${TARGET}" synthetic.SyntheticService/"$${rpc}"
+                  i=$$((i + 1))
+                done
+              }
+              call_many Unary 20 '{"message":"external-unary"}'
+              call_many StreamNumbers 5 '{"count":4}'
+              i=1
+              while [ $$i -le 5 ]; do
+                grpcurl -plaintext -import-path /proto -proto synthetic.proto \
+                  -d @ "$${TARGET}" synthetic.SyntheticService/ClientStreamSum <<'EOF'
+              {"sequence":1,"payload":"job-1"}
+              {"sequence":2,"payload":"job-2"}
+              {"sequence":3,"payload":"job-3"}
+              EOF
+                i=$$((i + 1))
+              done
+              echo "all grpc calls succeeded"
+          volumeMounts:
+            - name: proto
+              mountPath: /proto
+              readOnly: true
+      volumes:
+        - name: proto
+          configMap:
+            name: grpc-proto

@@ -1,0 +1,55 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: nodejs-grpc-client-rules
+  namespace: odigos-system
+spec:
+  name: nodejs grpc-client rules
+  notes: >-
+    Head sampling for periodic outbound gRPC client spans from Deployment
+    grpc-client in nodejs-grpc (peer Service grpc-server:50051).
+    Remove cluster-wide rule grpc-client-cluster-wide in odigos-system if present;
+    it sets all grpcClient spans to 0% and overrides these scoped rules.
+    Apply with:
+    kubectl apply -n odigos-system -f deployments/grpc-client/sampling.yaml
+  noisyOperations:
+    - name: grpc-client-unary
+      notes: Outbound Unary to grpc-server
+      percentageAtMost: 50
+      operation:
+        grpcClient:
+          serverAddress: grpc-server
+          service: synthetic.SyntheticService
+          method: Unary
+      sourceScopes: &grpcClientScopes
+        sources:
+          - kind: Deployment
+            name: grpc-client
+            namespace: nodejs-grpc
+    - name: grpc-client-stream-numbers
+      notes: Outbound server-streaming StreamNumbers to grpc-server
+      percentageAtMost: 50
+      operation:
+        grpcClient:
+          serverAddress: grpc-server
+          service: synthetic.SyntheticService
+          method: StreamNumbers
+      sourceScopes: *grpcClientScopes
+    - name: grpc-client-stream-sum
+      notes: Outbound client-streaming ClientStreamSum to grpc-server
+      percentageAtMost: 10
+      operation:
+        grpcClient:
+          serverAddress: grpc-server
+          service: synthetic.SyntheticService
+          method: ClientStreamSum
+      sourceScopes: *grpcClientScopes
+    - name: grpc-client-bidi-echo
+      notes: Outbound bidirectional BidiEcho to grpc-server
+      percentageAtMost: 10
+      operation:
+        grpcClient:
+          serverAddress: grpc-server
+          service: synthetic.SyntheticService
+          method: BidiEcho
+      sourceScopes: *grpcClientScopes
