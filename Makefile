@@ -26,7 +26,7 @@ CHAINSAW_CMD := $(CURDIR)/bin/chainsaw
 CHAINSAW_DEPS := bin/chainsaw
 endif
 
-.PHONY: test-runtime-version test-tail-sampling test-url-templatization bin/chainsaw
+.PHONY: test-runtime-version test-tail-sampling test-url-templatization test-head-sampling-grpc bin/chainsaw
 
 bin/chainsaw:
 	mkdir -p bin
@@ -52,3 +52,7 @@ test-tail-sampling: $(CHAINSAW_DEPS)
 # Assumes a kind cluster with Odigos already installed at the version under test.
 test-url-templatization: $(CHAINSAW_DEPS)
 	$(CHAINSAW_CMD) test tests/url-templatization
+
+# Assumes a kind cluster with Odigos already installed at the version under test.
+test-head-sampling-grpc: $(CHAINSAW_DEPS)
+	$(CHAINSAW_CMD) test tests/head-sampling-grpc

@@ -1,0 +1,73 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  gRPC server spans on grpc-server after grpc-server-calls job
+  (nodejs/grpc/deployments/grpc-server/curl-job.yaml).
+  External grpcurl calls produce server spans with parentSpanId null and curl-job rule IDs
+  (distinct from grpc-client periodic spans which share the same RPC methods but different rule IDs).
+  Head sampling noisy-operation rules; dryRun exports all spans with decision attrs.
+serviceName: grpc-server
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: grpc-server
+  k8s.deployment.name: grpc-server
+  k8s.namespace.name: nodejs-grpc
+x-absent-tail-sampling-attrs: &absent_tail_sampling_attrs
+  odigos.sampling.span.matching_rule.id: ""
+  odigos.sampling.span.matching_rule.name: ""
+  odigos.sampling.span.matching_rule.keep_percentage: ""
+  odigos.sampling.trace.deciding_rule.name: ""
+spans:
+  - id: unary-server
+    description: call_many Unary x20 — curl-job rule (50% noise)
+    samplingDecision: |
+      grpc-server-unary on external grpcurl calls (parentSpanId null on server span).
+      Rule id f2fbc7476e545e09; distinct from grpc-client periodic Unary server spans (bbfcfd562781700b).
+    kind: server
+    spanAttributes:
+      rpc.system: grpc
+      rpc.service: synthetic.SyntheticService
+      rpc.method: Unary
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: f2fbc7476e545e09
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      count: 20
+
+  - id: stream-numbers-server
+    description: call_many StreamNumbers x5 — curl-job rule (50% noise)
+    samplingDecision: |
+      grpc-server-stream-numbers on external grpcurl calls (parentSpanId null on server span).
+      Rule id b927fb21bdba2bb0; distinct from grpc-client periodic StreamNumbers (4d1d2ffe6ec1db2e).
+    kind: server
+    spanAttributes:
+      rpc.system: grpc
+      rpc.service: synthetic.SyntheticService
+      rpc.method: StreamNumbers
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: b927fb21bdba2bb0
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      count: 5
+
+  - id: client-stream-sum-server
+    description: ClientStreamSum x5 — curl-job rule (10% noise)
+    samplingDecision: |
+      grpc-server-client-stream-sum on external grpcurl calls (parentSpanId null on server span).
+      Rule id 479e4ccd78914861; distinct from grpc-client periodic ClientStreamSum (07aa53fe11dbedae).
+    kind: server
+    spanAttributes:
+      rpc.system: grpc
+      rpc.service: synthetic.SyntheticService
+      rpc.method: ClientStreamSum
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: 479e4ccd78914861
+      odigos.sampling.trace.deciding_rule.keep_percentage: 10
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      count: 5

@@ -23,6 +23,22 @@ let lastClientCallAt = null;
 let clientCallCount = 0;
 let grpcServer = null;
 let clientIntervalTimer = null;
+const methodCallCounts = {};
+
+function logMethodInvocation(method, detail) {
+  methodCallCounts[method] = (methodCallCounts[method] || 0) + 1;
+  const callNumber = methodCallCounts[method];
+  const suffix = detail ? " — " + detail : "";
+  console.log(
+    "[grpc-server] call #" +
+      callNumber +
+      " to " +
+      method +
+      " since inception" +
+      suffix
+  );
+  return callNumber;
+}
 
 const protoPath = path.join(__dirname, "..", "proto", "synthetic.proto");
 const packageDefinition = protoLoader.loadSync(protoPath, {
@@ -109,6 +125,7 @@ function buildServiceHandlers(peerAddress) {
   return {
     Unary: (call, callback) => {
       const inbound = call.request.message || "";
+      logMethodInvocation("Unary", 'message="' + inbound + '"');
       callback(null, {
         message: "unary-ok:" + inbound,
         timestamp_ms: Date.now(),
@@ -117,6 +134,7 @@ function buildServiceHandlers(peerAddress) {
 
     Relay: (call, callback) => {
       const inbound = call.request.message || "";
+      logMethodInvocation("Relay", 'message="' + inbound + '"');
       const client = createClient(peerAddress);
       unaryPromise(client, "relay-outbound:" + inbound)
         .then((outbound) => {
@@ -139,6 +157,7 @@ function buildServiceHandlers(peerAddress) {
 
     StreamNumbers: (call) => {
       const count = Math.max(1, Math.min(Number(call.request.count) || 5, 20));
+      logMethodInvocation("StreamNumbers", "count=" + count);
       let seq = 1;
       const timer = setInterval(() => {
         if (call.cancelled) {
@@ -159,6 +178,7 @@ function buildServiceHandlers(peerAddress) {
     },
 
     ClientStreamSum: (call, callback) => {
+      logMethodInvocation("ClientStreamSum");
       let receivedCount = 0;
       let sum = 0;
       call.on("data", (item) => {
@@ -172,6 +192,7 @@ function buildServiceHandlers(peerAddress) {
     },
 
     BidiEcho: (call) => {
+      logMethodInvocation("BidiEcho");
       call.on("data", (item) => {
         call.write({
           sequence: item.sequence,

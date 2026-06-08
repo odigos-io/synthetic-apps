@@ -47,6 +47,9 @@ status:
 	kubectl get pods -n nodejs-grpc
 	kubectl get services -n nodejs-grpc
 
+.PHONY: trigger
+trigger: trigger-grpc-server-calls trigger-grpc-relay-calls
+
 .PHONY: trigger-grpc-server-calls
 trigger-grpc-server-calls:
 	kubectl create namespace nodejs-grpc --dry-run=client -o yaml | kubectl apply -f -
