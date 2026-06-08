@@ -26,7 +26,7 @@ CHAINSAW_CMD := $(CURDIR)/bin/chainsaw
 CHAINSAW_DEPS := bin/chainsaw
 endif
 
-.PHONY: test-runtime-version test-tail-sampling test-url-templatization test-head-sampling-grpc bin/chainsaw
+.PHONY: test-runtime-version test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http bin/chainsaw
 
 bin/chainsaw:
 	mkdir -p bin
@@ -40,14 +40,16 @@ test-runtime-version: $(CHAINSAW_DEPS)
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
 # Usage: make test-tail-sampling LANGUAGE=nodejs
+# Usage: make test-head-sampling-http LANGUAGE=nodejs
 LANGUAGE ?= nodejs
-SUPPORTED_TAIL_SAMPLING_LANGUAGES := nodejs
-ifneq ($(filter $(LANGUAGE),$(SUPPORTED_TAIL_SAMPLING_LANGUAGES)),$(LANGUAGE))
-$(error LANGUAGE must be one of: $(SUPPORTED_TAIL_SAMPLING_LANGUAGES))
-endif
 
 test-tail-sampling: $(CHAINSAW_DEPS)
+	@test "$(filter $(LANGUAGE),nodejs)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs" && exit 1)
 	@echo "language: $(LANGUAGE)" | $(CHAINSAW_CMD) test tests/tail-sampling --values -
+
+test-head-sampling-http: $(CHAINSAW_DEPS)
+	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
+	@echo "language: $(LANGUAGE)" | $(CHAINSAW_CMD) test tests/head-sampling-http --values -
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
 test-url-templatization: $(CHAINSAW_DEPS)

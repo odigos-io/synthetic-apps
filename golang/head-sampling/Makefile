@@ -15,11 +15,18 @@ apply:
 	kubectl apply -n golang-head-sampling -f deployments/kubelet-health-probes/odigos-instrument.yaml
 	kubectl apply -n odigos-system -f deployments/head-sampling/sampling.yaml
 
+.PHONY: rollout
+rollout:
+	kubectl rollout restart deployment/head-sampling deployment/kubelet-health-probes -n golang-head-sampling
+	kubectl rollout status deployment/head-sampling -n golang-head-sampling --timeout=120s
+	kubectl rollout status deployment/kubelet-health-probes -n golang-head-sampling --timeout=120s
+
 .PHONY: deploy
 deploy:
 	make build
 	make load-to-kind
 	make apply
+	make rollout
 
 .PHONY: status
 status:

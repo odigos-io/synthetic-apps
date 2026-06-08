@@ -1,0 +1,139 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Outbound HTTP client spans from head-sampling-http-client periodic loop
+  (<language>/head-sampling/deployments/http-client/k8s.yaml, HTTP_MATCH_OUTBOUND_INTERVAL_MS=10000).
+  Node.js undici instrumentation uses url.path (not http.route) on client spans.
+  Counts are timing-dependent; assert minimum coverage and sampling attrs per outbound path.
+  Rule IDs match <language>/head-sampling/deployments/http-client/sampling.yaml.
+serviceName: head-sampling-http-client
+resourceAttributesEndsWith:
+  k8s.namespace.name: "-head-sampling"
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: head-sampling-http-client
+  k8s.deployment.name: head-sampling-http-client
+x-absent-tail-sampling-attrs: &absent_tail_sampling_attrs
+  odigos.sampling.span.matching_rule.id: ""
+  odigos.sampling.span.matching_rule.name: ""
+  odigos.sampling.span.matching_rule.keep_percentage: ""
+  odigos.sampling.trace.deciding_rule.name: ""
+spans:
+  - id: outbound-exact-get
+    description: periodic GET /http-match/exact/target — http-match-outbound-exact (50%)
+    samplingDecision: |
+      http-match-outbound-exact matches outbound GET to /http-match/exact/target (percentageAtMost 50%).
+      Rule id 9aa7d7ccd96f032c; distinct from http-server curl server spans (2e618296884b9516).
+    kind: client
+    spanAttributes:
+      url.path: /http-match/exact/target
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: 9aa7d7ccd96f032c
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1
+
+  - id: outbound-post-exact
+    description: periodic POST /http-match/exact/post-target — http-match-outbound-post-exact (10%)
+    samplingDecision: |
+      http-match-outbound-post-exact matches outbound POST to /http-match/exact/post-target (percentageAtMost 10%).
+      Rule id 555ab54b038d3b63.
+    kind: client
+    spanAttributes:
+      url.path: /http-match/exact/post-target
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: 555ab54b038d3b63
+      odigos.sampling.trace.deciding_rule.keep_percentage: 10
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1
+
+  - id: outbound-prefix-segment
+    description: periodic GET /http-match/prefix/segment — http-match-outbound-prefix (50%)
+    samplingDecision: |
+      http-match-outbound-prefix matches outbound paths under /http-match/prefix (percentageAtMost 50%).
+      Rule id 60c7201efc8ed626; distinct from http-server curl server spans (d7b84fcc85eac43b).
+    kind: client
+    spanAttributes:
+      url.path: /http-match/prefix/segment
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: 60c7201efc8ed626
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1
+
+  - id: outbound-prefix-nested
+    description: periodic GET /http-match/prefix/segment/nested — http-match-outbound-prefix (50%)
+    samplingDecision: |
+      http-match-outbound-prefix matches deeper outbound paths under /http-match/prefix (percentageAtMost 50%).
+      Rule id 60c7201efc8ed626.
+    kind: client
+    spanAttributes:
+      url.path: /http-match/prefix/segment/nested
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: 60c7201efc8ed626
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1
+
+  - id: outbound-templatized-exact
+    description: periodic GET /http-match/texact/out-peer-res — http-match-outbound-templatized-exact (50%)
+    samplingDecision: |
+      http-match-outbound-templatized-exact matches outbound templated route /http-match/texact/* (percentageAtMost 50%).
+      Rule id b1131d3e1b34060c; distinct from http-server curl server spans (ed538c0dd4c13171).
+    kind: client
+    spanAttributes:
+      url.path: /http-match/texact/out-peer-res
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: b1131d3e1b34060c
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1
+
+  - id: outbound-templatized-prefix-items
+    description: periodic GET /http-match/tprefix/out-peer-tenant/items — http-match-outbound-templatized-prefix (50%)
+    samplingDecision: |
+      http-match-outbound-templatized-prefix matches outbound routePrefix /http-match/tprefix/*/items (percentageAtMost 50%).
+      Rule id ff65cda584cf34df; distinct from http-server curl server spans (c55afb9eb1eade3e).
+    kind: client
+    spanAttributes:
+      url.path: /http-match/tprefix/out-peer-tenant/items
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: ff65cda584cf34df
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1
+
+  - id: outbound-templatized-prefix-items-nested
+    description: periodic GET /http-match/tprefix/out-peer-tenant/items/out-peer-item — http-match-outbound-templatized-prefix (50%)
+    samplingDecision: |
+      http-match-outbound-templatized-prefix matches deeper outbound paths under /http-match/tprefix/*/items (percentageAtMost 50%).
+      Rule id ff65cda584cf34df.
+    kind: client
+    spanAttributes:
+      url.path: /http-match/tprefix/out-peer-tenant/items/out-peer-item
+      http.response.status_code: 200
+      odigos.sampling.category: noise
+      odigos.sampling.dry_run: true
+      odigos.sampling.trace.deciding_rule.id: ff65cda584cf34df
+      odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesAbsent: *absent_tail_sampling_attrs
+    expected:
+      minimum: 1

@@ -1,0 +1,18 @@
+# Head-sampling dry run: record sampling decisions on spans without enforcing drops.
+# Disables tail sampling so only head-sampling rules apply.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: odigos-local-ui-config
+  namespace: odigos-system
+  labels:
+    odigos.io/config: local-ui
+data:
+  config.yaml: |
+    configVersion: 0
+    sampling:
+      dryRun: true
+      k8sHealthProbesSampling:
+        enabled: true
+      tailSampling:
+        disabled: true

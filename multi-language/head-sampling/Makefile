@@ -22,11 +22,18 @@ apply:
 	kubectl apply -n multi-language-head-sampling -f deployments/k8s.yaml
 	kubectl apply -n multi-language-head-sampling -f deployments/odigos-instrument.yaml
 
+.PHONY: rollout
+rollout:
+	kubectl rollout restart deployment/ml-head-sampling-go deployment/ml-head-sampling-nodejs -n multi-language-head-sampling
+	kubectl rollout status deployment/ml-head-sampling-go -n multi-language-head-sampling --timeout=120s
+	kubectl rollout status deployment/ml-head-sampling-nodejs -n multi-language-head-sampling --timeout=120s
+
 .PHONY: deploy
 deploy:
 	make build
 	make load-to-kind
 	make apply
+	make rollout
 
 .PHONY: status
 status:

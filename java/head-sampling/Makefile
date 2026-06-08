@@ -21,11 +21,20 @@ apply:
 	kubectl apply -n odigos-system -f deployments/http-server/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/http-client/sampling.yaml
 
+.PHONY: rollout
+rollout:
+	kubectl rollout restart deployment/head-sampling deployment/head-sampling-http-server deployment/head-sampling-http-client deployment/kubelet-health-probes -n java-head-sampling
+	kubectl rollout status deployment/head-sampling -n java-head-sampling --timeout=120s
+	kubectl rollout status deployment/head-sampling-http-server -n java-head-sampling --timeout=120s
+	kubectl rollout status deployment/head-sampling-http-client -n java-head-sampling --timeout=120s
+	kubectl rollout status deployment/kubelet-health-probes -n java-head-sampling --timeout=120s
+
 .PHONY: deploy
 deploy:
 	make build
 	make load-to-kind
 	make apply
+	make rollout
 
 .PHONY: status
 status:
