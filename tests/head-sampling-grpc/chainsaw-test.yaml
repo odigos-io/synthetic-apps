@@ -24,10 +24,10 @@ spec:
             content: |
               kubectl create namespace "$TESTS_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Enable sampling dry run
+    - name: Enable sampling dry run and disable tail sampling
       try:
         - apply:
-            file: ../tail-sampling/apply/odigos-sampling-dry-run-config.yaml
+            file: ./apply/odigos-sampling-dry-run-config.yaml
 
     - name: Install Simple Trace Db
       try:
