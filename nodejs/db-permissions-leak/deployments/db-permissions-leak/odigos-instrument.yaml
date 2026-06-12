@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-db-permissions-leak
+  namespace: nodejs-db-permissions-leak
+spec:
+  workload:
+    kind: Deployment
+    name: db-permissions-leak
+    namespace: nodejs-db-permissions-leak

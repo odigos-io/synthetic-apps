@@ -1,0 +1,100 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              value: app
+            - name: POSTGRES_DB
+              value: permissions_leak
+          readinessProbe:
+            exec:
+              command: ['pg_isready', '-U', 'app', '-d', 'permissions_leak']
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: db-permissions-leak
+  labels:
+    app: db-permissions-leak
+spec:
+  selector:
+    matchLabels:
+      app: db-permissions-leak
+  template:
+    metadata:
+      labels:
+        app: db-permissions-leak
+    spec:
+      containers:
+        - name: db-permissions-leak
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-db-permissions-leak:db-permissions-leak
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: '5432'
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: permissions_leak
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: db-permissions-leak
+spec:
+  selector:
+    app: db-permissions-leak
+  ports:
+    - protocol: TCP
+      port: 8080

@@ -1,0 +1,57 @@
+# One-off Job: logs in, hits department lookups, then triggers the admin-table leak.
+# Trigger with: make trigger (from nodejs/db-permissions-leak)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-permissions-leak-trigger
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: db-permissions-leak-trigger
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE="http://db-permissions-leak:8080"
+
+              login() {
+                curl -sS -X POST "$${BASE}/auth/login" \
+                  -H "Content-Type: application/json" \
+                  -d "$$1" \
+                  | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
+              }
+
+              ALICE_TOKEN=$$(login '{"email":"alice@example.com","password":"demo"}')
+              DAVE_TOKEN=$$(login '{"email":"dave@example.com","password":"demo"}')
+              GRACE_TOKEN=$$(login '{"email":"grace@example.com","password":"demo"}')
+
+              echo "GET $${BASE}/api/users?table=sales&email=alice (alice)"
+              curl -sS -f -H "Authorization: Bearer $${ALICE_TOKEN}" \
+                "$${BASE}/api/users?table=sales&email=alice"
+              echo ""
+              echo "GET $${BASE}/api/users?table=engineers&email=dave (dave)"
+              curl -sS -f -H "Authorization: Bearer $${DAVE_TOKEN}" \
+                "$${BASE}/api/users?table=engineers&email=dave"
+              echo ""
+              echo "GET $${BASE}/api/users?table=marketing&email=grace (grace)"
+              curl -sS -f -H "Authorization: Bearer $${GRACE_TOKEN}" \
+                "$${BASE}/api/users?table=marketing&email=grace"
+              echo ""
+              echo "GET $${BASE}/api/users?table=engineers&email=dave (alice cross-dept)"
+              curl -sS -f -H "Authorization: Bearer $${ALICE_TOKEN}" \
+                "$${BASE}/api/users?table=engineers&email=dave"
+              echo ""
+              echo "GET $${BASE}/api/users?table=admins&email= (alice leak)"
+              curl -sS -f -H "Authorization: Bearer $${ALICE_TOKEN}" \
+                "$${BASE}/api/users?table=admins&email="
+              echo ""
+              echo "trigger succeeded"
