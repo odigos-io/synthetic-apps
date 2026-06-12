@@ -1,0 +1,73 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: pubsub-consumer
+  labels:
+    app: pubsub-consumer
+spec:
+  selector:
+    matchLabels:
+      app: pubsub-consumer
+  template:
+    metadata:
+      labels:
+        app: pubsub-consumer
+    spec:
+      containers:
+        - name: pubsub-consumer
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-google-pubsub:google-pubsub
+          imagePullPolicy: IfNotPresent
+          command: ["node", "consumer.js"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "amir-playground-499009"
+            - name: PUBSUB_PUBLISH_MESSAGE_SUBSCRIPTION
+              value: "publish-message-subscription"
+            - name: STARTUP_DELAY_MS
+              value: "3000"
+            - name: PROCESS_DELAY_MS
+              value: "25"
+            # Optional: point at the Pub/Sub emulator instead of GCP.
+            # - name: PUBSUB_EMULATOR_HOST
+            #   value: "pubsub-emulator:8085"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/var/secrets/google/key.json"
+          volumeMounts:
+            - name: google-cloud-key
+              mountPath: /var/secrets/google
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: google-cloud-key
+          secret:
+            secretName: google-cloud-pubsub-key
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pubsub-consumer
+spec:
+  selector:
+    app: pubsub-consumer
+  ports:
+    - protocol: TCP
+      port: 8080

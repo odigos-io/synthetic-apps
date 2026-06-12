@@ -1,0 +1,32 @@
+# One-off Job: POSTs legacy and publishMessage publish endpoints on pubsub-publisher.
+# Trigger with: make trigger (from nodejs/google-pubsub)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pubsub-publisher-publish
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: pubsub-publisher-publish
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://pubsub-publisher:8080"
+              echo "POST $${BASE_URL}/publish/legacy"
+              curl -sS -f -X POST "$${BASE_URL}/publish/legacy"
+              echo ""
+              echo "POST $${BASE_URL}/publish/publish-message"
+              curl -sS -f -X POST "$${BASE_URL}/publish/publish-message"
+              echo ""
+              echo "publish triggers succeeded"

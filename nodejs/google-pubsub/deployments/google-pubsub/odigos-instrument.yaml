@@ -1,0 +1,21 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-pubsub-publisher
+  namespace: nodejs-google-pubsub
+spec:
+  workload:
+    kind: Deployment
+    name: pubsub-publisher
+    namespace: nodejs-google-pubsub
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-pubsub-consumer
+  namespace: nodejs-google-pubsub
+spec:
+  workload:
+    kind: Deployment
+    name: pubsub-consumer
+    namespace: nodejs-google-pubsub

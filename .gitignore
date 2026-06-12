@@ -1,3 +1,4 @@
 node_modules
 bin/
+pubsub-synthetic-key.json
 tests/tail-sampling/.trace-sampling-metrics-baseline.json.tmp

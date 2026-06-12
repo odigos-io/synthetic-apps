@@ -1,0 +1,75 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: pubsub-publisher
+  labels:
+    app: pubsub-publisher
+spec:
+  selector:
+    matchLabels:
+      app: pubsub-publisher
+  template:
+    metadata:
+      labels:
+        app: pubsub-publisher
+    spec:
+      containers:
+        - name: pubsub-publisher
+          image: ghcr.io/odigos-io/synthetic-apps/nodejs-google-pubsub:google-pubsub
+          imagePullPolicy: IfNotPresent
+          command: ["node", "publisher.js"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "amir-playground-499009"
+            - name: PUBSUB_LEGACY_TOPIC
+              value: "legacy-publish-topic"
+            - name: PUBSUB_PUBLISH_MESSAGE_TOPIC
+              value: "publish-message-topic"
+            - name: PUBLISH_INTERVAL_MS
+              value: "10000"
+            - name: STARTUP_DELAY_MS
+              value: "3000"
+            # Optional: point at the Pub/Sub emulator instead of GCP.
+            # - name: PUBSUB_EMULATOR_HOST
+            #   value: "pubsub-emulator:8085"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/var/secrets/google/key.json"
+          volumeMounts:
+            - name: google-cloud-key
+              mountPath: /var/secrets/google
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: google-cloud-key
+          secret:
+            secretName: google-cloud-pubsub-key
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pubsub-publisher
+spec:
+  selector:
+    app: pubsub-publisher
+  ports:
+    - protocol: TCP
+      port: 8080
