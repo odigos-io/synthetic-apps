@@ -1,11 +1,12 @@
 const { pool } = require('./db');
+const { validateRegistrationEmail } = require('./email');
 
 const DEMO_PASSWORDS = {
   employee: 'demo',
   admin: 'admin',
 };
 
-const DEPARTMENTS = ['sales', 'engineers', 'marketing'];
+const DEPARTMENTS = ['sales', 'engineers', 'marketing', 'vendor'];
 
 async function lookupAccount(email) {
   const adminResult = await pool.query(
@@ -14,10 +15,10 @@ async function lookupAccount(email) {
   );
   if (adminResult.rows.length > 0) {
     return {
-      role: 'admin',
       email: adminResult.rows[0].email,
       name: adminResult.rows[0].name,
       department: null,
+      password: DEMO_PASSWORDS.admin,
     };
   }
 
@@ -28,10 +29,10 @@ async function lookupAccount(email) {
     );
     if (result.rows.length > 0) {
       return {
-        role: 'employee',
         email: result.rows[0].email,
         name: result.rows[0].name,
         department,
+        password: DEMO_PASSWORDS.employee,
       };
     }
   }
@@ -42,7 +43,6 @@ async function lookupAccount(email) {
 function createToken(account) {
   return Buffer.from(
     JSON.stringify({
-      role: account.role,
       email: account.email,
       department: account.department,
     })
@@ -52,10 +52,7 @@ function createToken(account) {
 function parseToken(token) {
   try {
     const payload = JSON.parse(Buffer.from(token, 'base64url').toString());
-    if (!payload.role || !payload.email) {
-      return null;
-    }
-    if (payload.role === 'employee' && !payload.department) {
+    if (!payload.email) {
       return null;
     }
     return payload;
@@ -64,20 +61,43 @@ function parseToken(token) {
   }
 }
 
+async function registerEmployee(department, email, name) {
+  if (!DEPARTMENTS.includes(department)) {
+    throw new Error(`unknown department: ${department}`);
+  }
+
+  validateRegistrationEmail(email);
+
+  const existing = await lookupAccount(email);
+  if (existing) {
+    return null;
+  }
+
+  await pool.query(`INSERT INTO ${department} (email, name) VALUES ($1, $2)`, [
+    email,
+    name,
+  ]);
+
+  return {
+    email,
+    name,
+    department,
+  };
+}
+
 async function login(email, password) {
   const account = await lookupAccount(email);
   if (!account) {
     return null;
   }
 
-  const expectedPassword =
-    account.role === 'admin' ? DEMO_PASSWORDS.admin : DEMO_PASSWORDS.employee;
-  if (password !== expectedPassword) {
+  if (password !== account.password) {
     return null;
   }
 
   return {
-    ...account,
+    email: account.email,
+    department: account.department,
     token: createToken(account),
   };
 }
@@ -97,23 +117,17 @@ function requireAuth(req, res, next) {
   next();
 }
 
-function requireAdmin(req, res, next) {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'admin role required' });
-  }
-  next();
-}
-
 const DEMO_ACCOUNTS = [
-  { email: 'alice@example.com', password: 'demo', role: 'employee', department: 'sales' },
-  { email: 'dave@example.com', password: 'demo', role: 'employee', department: 'engineers' },
-  { email: 'grace@example.com', password: 'demo', role: 'employee', department: 'marketing' },
-  { email: 'root@internal.corp', password: 'admin', role: 'admin', department: null },
+  { email: 'alice@example.com', password: 'demo', department: 'sales' },
+  { email: 'dave@example.com', password: 'demo', department: 'engineers' },
+  { email: 'grace@example.com', password: 'demo', department: 'marketing' },
+  { email: 'jack@example.com', password: 'demo', department: 'vendor' },
+  { email: 'root@internal.corp', password: 'admin', department: null },
 ];
 
 module.exports = {
   login,
+  registerEmployee,
   requireAuth,
-  requireAdmin,
   DEMO_ACCOUNTS,
 };

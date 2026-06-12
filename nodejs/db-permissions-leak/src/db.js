@@ -45,6 +45,12 @@ async function initDb() {
       name TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS vendor (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      name TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS admins (
       id SERIAL PRIMARY KEY,
       email TEXT NOT NULL,
@@ -80,6 +86,16 @@ async function initDb() {
         ('grace@example.com', 'Grace Marketing'),
         ('henry@example.com', 'Henry Marketing'),
         ('iris@example.com', 'Iris Marketing')`
+    );
+  }
+
+  const vendorCount = await pool.query('SELECT COUNT(*)::int AS count FROM vendor');
+  if (vendorCount.rows[0].count === 0) {
+    await pool.query(
+      `INSERT INTO vendor (email, name) VALUES
+        ('jack@example.com', 'Jack Vendor'),
+        ('kate@example.com', 'Kate Vendor'),
+        ('liam@example.com', 'Liam Vendor')`
     );
   }
 

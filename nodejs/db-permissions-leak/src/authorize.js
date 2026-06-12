@@ -1,7 +1,15 @@
-const DEPARTMENT_TABLES = ['sales', 'engineers', 'marketing'];
+const DEPARTMENT_TABLES = ['sales', 'engineers', 'marketing', 'vendor'];
+const INTERNAL_DOMAIN = 'internal.corp';
+
+const { emailDomain } = require('./email');
+
+function isInternalEmail(user) {
+  // Bug: substring match — attacker domains like internal.corp.evil.com also match.
+  return emailDomain(user.email).includes(INTERNAL_DOMAIN);
+}
 
 function authorizeTableAccess(user, table) {
-  if (user.role === 'admin') {
+  if (isInternalEmail(user)) {
     return true;
   }
 
@@ -16,4 +24,9 @@ function authorizeTableAccess(user, table) {
   return user.department === table;
 }
 
-module.exports = { authorizeTableAccess, DEPARTMENT_TABLES };
+module.exports = {
+  authorizeTableAccess,
+  DEPARTMENT_TABLES,
+  INTERNAL_DOMAIN,
+  isInternalEmail,
+};

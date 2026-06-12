@@ -1,12 +1,13 @@
 const { pool } = require('./db');
 
-const DEPARTMENT_TABLES = ['sales', 'engineers', 'marketing'];
+const DEPARTMENT_TABLES = ['sales', 'engineers', 'marketing', 'vendor'];
 
 // Public aliases for the users endpoint. admins is not intended here but still accepted.
 const TABLE_ALIASES = {
   sales: 'sales',
   engineers: 'engineers',
   marketing: 'marketing',
+  vendor: 'vendor',
   admins: 'admins',
 };
 
