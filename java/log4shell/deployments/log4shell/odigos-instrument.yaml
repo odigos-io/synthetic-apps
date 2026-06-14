@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-log4shell
+  namespace: java-log4shell
+spec:
+  workload:
+    kind: Deployment
+    name: log4shell
+    namespace: java-log4shell

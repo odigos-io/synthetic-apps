@@ -81,6 +81,18 @@ jobs:
           - deploymenttype: envmanifest
             language: java
             scenario: httpserver
+          - deploymenttype: log4shell
+            language: java
+            scenario: log4shell
+          - deploymenttype: exploit-http
+            language: java
+            scenario: log4shell
+          - deploymenttype: exploit-ldap
+            language: java
+            scenario: log4shell
+          - deploymenttype: exploit-callback
+            language: java
+            scenario: log4shell
           # Go images
           - deploymenttype: httpserver
             language: golang

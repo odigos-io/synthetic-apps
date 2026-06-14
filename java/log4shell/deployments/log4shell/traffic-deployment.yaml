@@ -1,0 +1,43 @@
+# Background Deployment: continuous benign search traffic.
+# Start with: make trigger-traffic (from java/log4shell)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log4shell-traffic
+  labels:
+    app: log4shell-traffic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log4shell-traffic
+  template:
+    metadata:
+      labels:
+        app: log4shell-traffic
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE="http://log4shell:8080"
+              INTERVAL="$${TRAFFIC_INTERVAL:-10}"
+
+              echo "legitimate traffic started (interval=$${INTERVAL}s)"
+
+              while true; do
+                curl -sS -o /dev/null \
+                  -H "User-Agent: log4shell-traffic/1.0" \
+                  "$${BASE}/api/search?q=observability&category=books"
+                curl -sS -o /dev/null \
+                  -H "User-Agent: log4shell-traffic/1.0" \
+                  "$${BASE}/api/search?q=prometheus&category=telemetry"
+                curl -sS -o /dev/null \
+                  -H "User-Agent: log4shell-traffic/1.0" \
+                  "$${BASE}/api/search?q=kubernetes"
+                sleep "$${INTERVAL}"
+              done

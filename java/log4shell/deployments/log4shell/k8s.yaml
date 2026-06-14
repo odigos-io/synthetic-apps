@@ -1,0 +1,221 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              value: app
+            - name: POSTGRES_DB
+              value: log4shell
+          readinessProbe:
+            exec:
+              command: ['pg_isready', '-U', 'app', '-d', 'log4shell']
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: log4shell
+  labels:
+    app: log4shell
+spec:
+  selector:
+    matchLabels:
+      app: log4shell
+  template:
+    metadata:
+      labels:
+        app: log4shell
+    spec:
+      containers:
+        - name: log4shell
+          image: ghcr.io/odigos-io/synthetic-apps/java-log4shell:log4shell
+          imagePullPolicy: IfNotPresent
+          command: ["java"]
+          args:
+            - "-Dcom.sun.jndi.ldap.object.trustURLCodebase=true"
+            - "-Dcom.sun.jndi.rmi.object.trustURLCodebase=true"
+            - "-jar"
+            - "app.jar"
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: '5432'
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: log4shell
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: log4shell
+spec:
+  selector:
+    app: log4shell
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+# Serves DemoExploit.class over HTTP for remote class loading.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: log4shell-http
+  labels:
+    app: log4shell-http
+spec:
+  selector:
+    matchLabels:
+      app: log4shell-http
+  template:
+    metadata:
+      labels:
+        app: log4shell-http
+    spec:
+      containers:
+        - name: http
+          image: ghcr.io/odigos-io/synthetic-apps/java-log4shell:exploit-http
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: /DemoExploit.class
+              port: 8081
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: log4shell-http
+spec:
+  selector:
+    app: log4shell-http
+  ports:
+    - protocol: TCP
+      port: 8081
+---
+# marshalsec LDAP server returning a Reference to the HTTP codebase.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: log4shell-ldap
+  labels:
+    app: log4shell-ldap
+spec:
+  selector:
+    matchLabels:
+      app: log4shell-ldap
+  template:
+    metadata:
+      labels:
+        app: log4shell-ldap
+    spec:
+      containers:
+        - name: ldap
+          image: ghcr.io/odigos-io/synthetic-apps/java-log4shell:exploit-ldap
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CODEBASE
+              value: http://log4shell-http:8081/#DemoExploit
+          ports:
+            - containerPort: 1389
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: log4shell-ldap
+spec:
+  selector:
+    app: log4shell-ldap
+  ports:
+    - protocol: TCP
+      port: 1389
+---
+# Receives the outbound HTTP callback after the remote class is loaded.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: log4shell-callback
+  labels:
+    app: log4shell-callback
+spec:
+  selector:
+    matchLabels:
+      app: log4shell-callback
+  template:
+    metadata:
+      labels:
+        app: log4shell-callback
+    spec:
+      containers:
+        - name: callback
+          image: ghcr.io/odigos-io/synthetic-apps/java-log4shell:exploit-callback
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: log4shell-callback
+spec:
+  selector:
+    app: log4shell-callback
+  ports:
+    - protocol: TCP
+      port: 8082

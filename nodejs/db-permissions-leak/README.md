@@ -93,7 +93,9 @@ node src/index.js
 
 ```bash
 make deploy
-make trigger
+make trigger-traffic   # background legitimate traffic from demo accounts
+make trigger-attack    # one-off permission bypass demonstration
+make stop-traffic      # stop background traffic
 ```
 
 ## Endpoints

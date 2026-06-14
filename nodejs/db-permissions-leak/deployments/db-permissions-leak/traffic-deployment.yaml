@@ -1,0 +1,72 @@
+# Background Deployment: continuous legitimate API traffic from demo accounts.
+# Start with: make trigger-traffic (from nodejs/db-permissions-leak)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-permissions-leak-traffic
+  labels:
+    app: db-permissions-leak-traffic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-permissions-leak-traffic
+  template:
+    metadata:
+      labels:
+        app: db-permissions-leak-traffic
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE="http://db-permissions-leak:8080"
+              INTERVAL="$${TRAFFIC_INTERVAL:-10}"
+
+              login() {
+                curl -sS -X POST "$${BASE}/auth/login" \
+                  -H "Content-Type: application/json" \
+                  -d "$$1" \
+                  | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'
+              }
+
+              curl_auth() {
+                curl -sS -o /dev/null -H "Authorization: Bearer $$1" "$$2"
+              }
+
+              curl_auth_expect() {
+                code=$$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $$1" "$$2")
+                test "$${code}" = "$$3"
+              }
+
+              echo "legitimate traffic started (interval=$${INTERVAL}s)"
+
+              while true; do
+                ALICE_TOKEN=$$(login '{"email":"alice@example.com","password":"demo"}')
+                curl_auth "$${ALICE_TOKEN}" \
+                  "$${BASE}/api/users?table=sales&email=alice@example.com"
+
+                DAVE_TOKEN=$$(login '{"email":"dave@example.com","password":"demo"}')
+                curl_auth "$${DAVE_TOKEN}" \
+                  "$${BASE}/api/users?table=engineers&email=dave@example.com"
+
+                GRACE_TOKEN=$$(login '{"email":"grace@example.com","password":"demo"}')
+                curl_auth "$${GRACE_TOKEN}" \
+                  "$${BASE}/api/users?table=marketing&email=grace@example.com"
+
+                JACK_TOKEN=$$(login '{"email":"jack@example.com","password":"demo"}')
+                curl_auth "$${JACK_TOKEN}" \
+                  "$${BASE}/api/users?table=vendor&email=jack@example.com"
+                curl_auth_expect "$${JACK_TOKEN}" \
+                  "$${BASE}/api/users?table=admins&email=root@internal.corp" 403
+
+                ROOT_TOKEN=$$(login '{"email":"root@internal.corp","password":"admin"}')
+                curl_auth "$${ROOT_TOKEN}" \
+                  "$${BASE}/api/admins?email=root@internal.corp"
+
+                sleep "$${INTERVAL}"
+              done

