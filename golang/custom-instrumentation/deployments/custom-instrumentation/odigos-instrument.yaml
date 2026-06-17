@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-custom-instrumentation
+  namespace: golang-custom-instrumentation
+spec:
+  workload:
+    kind: Deployment
+    name: custom-instrumentation
+    namespace: golang-custom-instrumentation

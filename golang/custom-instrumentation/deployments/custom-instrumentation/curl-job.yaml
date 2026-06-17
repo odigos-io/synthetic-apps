@@ -1,0 +1,35 @@
+# One-off Job: curls the /value endpoint for custom instrumentation tests.
+# Trigger with: make trigger-curls (from golang/custom-instrumentation)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: custom-instrumentation-curls
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: custom-instrumentation-curls
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://custom-instrumentation:8080"
+              echo "GET $${BASE_URL}/value"
+              curl -sS -f "$${BASE_URL}/value"
+              echo
+              echo "GET $${BASE_URL}/value?key=token"
+              curl -sS -f "$${BASE_URL}/value?key=token"
+              echo
+              echo "GET $${BASE_URL}/value?key=version"
+              curl -sS -f "$${BASE_URL}/value?key=version"
+              echo
+              echo "all curls succeeded"

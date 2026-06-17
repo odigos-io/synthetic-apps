@@ -1,0 +1,28 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationRule
+metadata:
+  name: custom-instrumentation-fetch-value
+  namespace: odigos-system
+spec:
+  ruleName: Instrument memory.Store.FetchValue
+  notes: >-
+    Custom eBPF instrumentation for the in-memory fetch path in the
+    golang-custom-instrumentation synthetic app. Instruments
+    (*memory.Store).FetchValue so calls from GET /value appear as internal spans.
+  scopes:
+    languages:
+      - go
+    sources:
+      - kind: Deployment
+        name: custom-instrumentation
+        namespace: golang-custom-instrumentation
+  codeAttributes:
+    function: true
+    namespace: true
+    filePath: true
+    lineNumber: true
+  customInstrumentations:
+    golang:
+      - packageName: golang-custom-instrumentation/internal/memory
+        receiverName: Store
+        receiverMethodName: FetchValue
