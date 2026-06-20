@@ -17,7 +17,6 @@ helm upgrade --install odigos odigos/odigos \
   --version "${VERSION}" \
   --namespace odigos-system \
   --create-namespace \
-  --set onPremToken="${ODIGOS_ONPREM_TOKEN}" \
   --set image.tag="v${VERSION}" \
   --wait \
-  --timeout 10m
+  --timeout 2m
