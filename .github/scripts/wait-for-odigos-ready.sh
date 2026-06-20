@@ -3,9 +3,8 @@ set -euo pipefail
 
 NAMESPACE="${ODIGOS_NAMESPACE:-odigos-system}"
 
-echo "Waiting for Odigos pods in namespace ${NAMESPACE}..."
-kubectl wait --for=condition=ready pod \
-  -l app.kubernetes.io/part-of=odigos \
+echo "Waiting for Odigos deployments in namespace ${NAMESPACE}..."
+kubectl wait --for=condition=available deployment --all \
   -n "${NAMESPACE}" \
   --timeout=600s
 

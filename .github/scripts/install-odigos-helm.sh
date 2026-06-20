@@ -7,11 +7,10 @@ VERSION="${VERSION#v}"
 helm repo add odigos https://odigos-io.github.io/odigos/ 2>/dev/null || true
 helm repo update
 
-echo "Installing Odigos chart version ${VERSION} (image tag v${VERSION})..."
+echo "Installing Odigos chart version ${VERSION}..."
 helm upgrade --install odigos odigos/odigos \
   --version "${VERSION}" \
   --namespace odigos-system \
   --create-namespace \
-  --set image.tag="v${VERSION}" \
   --wait \
   --timeout 2m
