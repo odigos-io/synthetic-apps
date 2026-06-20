@@ -34,9 +34,25 @@ env:
   DEPOT_REGISTRY: p0xd21zf5r.registry.depot.dev
 
 jobs:
+  setup-matrix:
+    runs-on: depot-ubuntu-latest
+    outputs:
+      languages: ${{ steps.set-matrix.outputs.languages }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        run: |
+          langs=$(echo "${{ inputs.languages }}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "languages=${langs}" >> "$GITHUB_OUTPUT"
+
   scenario-e2e:
+    needs: setup-matrix
     runs-on: depot-ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.setup-matrix.outputs.languages) }}
     steps:
       - uses: actions/checkout@v7
 
@@ -44,7 +60,7 @@ jobs:
         with:
           odigos_version: ${{ inputs.odigos_version }}
           scenario: ${{ inputs.scenario }}
-          languages: ${{ inputs.languages }}
+          languages: ${{ matrix.language }}
           tier: ${{ inputs.tier }}
         env:
           ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ secrets.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}

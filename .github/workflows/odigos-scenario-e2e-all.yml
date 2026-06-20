@@ -21,22 +21,34 @@ jobs:
         include:
           - scenario: tail-sampling
             tier: oss
-            languages: nodejs,python,java
+            language: nodejs
+          - scenario: tail-sampling
+            tier: oss
+            language: python
+          - scenario: tail-sampling
+            tier: oss
+            language: java
           - scenario: tail-sampling
             tier: enterprise
-            languages: nodejs,python,java
+            language: nodejs
+          - scenario: tail-sampling
+            tier: enterprise
+            language: python
+          - scenario: tail-sampling
+            tier: enterprise
+            language: java
           - scenario: head-sampling-http
             tier: oss
-            languages: nodejs
+            language: nodejs
           - scenario: head-sampling-http
             tier: enterprise
-            languages: nodejs
+            language: nodejs
           - scenario: head-sampling-grpc
             tier: oss
-            languages: nodejs
+            language: nodejs
           - scenario: head-sampling-grpc
             tier: enterprise
-            languages: nodejs
+            language: nodejs
     steps:
       - uses: actions/checkout@v7
 
@@ -44,7 +56,7 @@ jobs:
         with:
           odigos_version: ${{ inputs.odigos_version }}
           scenario: ${{ matrix.scenario }}
-          languages: ${{ matrix.languages }}
+          languages: ${{ matrix.language }}
           tier: ${{ matrix.tier }}
         env:
           ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ secrets.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}
