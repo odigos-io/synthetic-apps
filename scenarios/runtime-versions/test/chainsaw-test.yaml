@@ -73,7 +73,6 @@ spec:
               cd "${app_dir}"
               if [ -n "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
                 make apply OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
-                make rollout
               else
                 make deploy OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
               fi
