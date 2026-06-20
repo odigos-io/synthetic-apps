@@ -14,6 +14,10 @@ inputs:
   tier:
     description: 'Odigos tier to install (enterprise or oss)'
     required: true
+  otel_distro_name:
+    description: 'Optional otelDistroName override for scenario Source manifests (tail-sampling only)'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -94,7 +98,8 @@ runs:
             [[ -z "${lang}" ]] && continue
             chainsaw test "${test_dir}" \
               --set-string "language=${lang}" \
-              --set-string "depot_pull_token=${DEPOT_SYNTHTIC_APPS_PULL_TOKEN}" &
+              --set-string "depot_pull_token=${DEPOT_SYNTHTIC_APPS_PULL_TOKEN}" \
+              --set-string "otel_distro_name=${{ inputs.otel_distro_name }}" &
             pids+=($!)
           done
           fail=0

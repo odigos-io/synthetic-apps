@@ -22,33 +22,43 @@ jobs:
           - scenario: tail-sampling
             tier: oss
             language: nodejs
+            otel_distro_name: 'nodejs-community'
           - scenario: tail-sampling
             tier: oss
             language: python
+            otel_distro_name: 'python-community'
           - scenario: tail-sampling
             tier: oss
             language: java
+            otel_distro_name: 'java-community'
           - scenario: tail-sampling
             tier: enterprise
             language: nodejs
+            otel_distro_name: 'nodejs-enterprise'
           - scenario: tail-sampling
             tier: enterprise
             language: python
+            otel_distro_name: 'python-enterprise'
           - scenario: tail-sampling
             tier: enterprise
             language: java
+            otel_distro_name: java-enterprise
           - scenario: head-sampling-http
             tier: oss
             language: nodejs
+            otel_distro_name: 'nodejs-community'
           - scenario: head-sampling-http
             tier: enterprise
             language: nodejs
+            otel_distro_name: 'nodejs-enterprise'
           - scenario: head-sampling-grpc
             tier: oss
             language: nodejs
+            otel_distro_name: 'nodejs-community'
           - scenario: head-sampling-grpc
             tier: enterprise
             language: nodejs
+            otel_distro_name: 'nodejs-enterprise'
     steps:
       - uses: actions/checkout@v7
 
@@ -58,6 +68,7 @@ jobs:
           scenario: ${{ matrix.scenario }}
           languages: ${{ matrix.language }}
           tier: ${{ matrix.tier }}
+          otel_distro_name: ${{ matrix.otel_distro_name }}
         env:
           ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ secrets.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}
           DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}

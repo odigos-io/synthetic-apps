@@ -1,6 +1,7 @@
 NAMESPACE ?= java-tail-sampling
 
 include ../../../depot.mk
+include ../scenario.mk
 
 IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:java-tail-sampling
 
@@ -15,11 +16,9 @@ load-to-kind:
 .PHONY: apply
 apply: ensure-namespace
 	kubectl apply -n java-tail-sampling -f deployments/errors/k8s.yaml
-	kubectl apply -n java-tail-sampling -f deployments/errors/odigos-instrument.yaml
 	kubectl apply -n java-tail-sampling -f deployments/duration/k8s.yaml
-	kubectl apply -n java-tail-sampling -f deployments/duration/odigos-instrument.yaml
 	kubectl apply -n java-tail-sampling -f deployments/tail-sampling/k8s.yaml
-	kubectl apply -n java-tail-sampling -f deployments/tail-sampling/odigos-instrument.yaml
+	$(MAKE) apply-odigos-sources
 	kubectl apply -n odigos-system -f deployments/errors/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/duration/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/tail-sampling/sampling.yaml

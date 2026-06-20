@@ -29,6 +29,11 @@ on:
           - enterprise
           - oss
         default: enterprise
+      otel_distro_name:
+        description: 'Optional otelDistroName override (e.g. java-enterprise)'
+        required: false
+        type: string
+        default: ''
 
 env:
   DEPOT_REGISTRY: p0xd21zf5r.registry.depot.dev
@@ -62,6 +67,7 @@ jobs:
           scenario: ${{ inputs.scenario }}
           languages: ${{ matrix.language }}
           tier: ${{ inputs.tier }}
+          otel_distro_name: ${{ inputs.otel_distro_name }}
         env:
           ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ secrets.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}
           DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}

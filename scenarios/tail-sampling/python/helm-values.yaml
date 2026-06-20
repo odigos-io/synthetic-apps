@@ -1,0 +1,8 @@
+namespace: python-tail-sampling
+sources:
+  - name: instrument-tail-sampling
+    workload: tail-sampling
+  - name: instrument-tail-sampling-errors
+    workload: tail-sampling-errors
+  - name: instrument-tail-sampling-duration
+    workload: tail-sampling-duration

@@ -7,6 +7,7 @@ spec:
     E2E tests for Odigos tail sampling.
     Prerequisites: a kind cluster with Odigos already installed at the version under test.
     Configure the language under test via --values (e.g. make test-tail-sampling LANGUAGE=nodejs).
+    Optionally set otel_distro_name (e.g. make test-tail-sampling LANGUAGE=java OTEL_DISTRO_NAME=opentelemetry-ebpf-instrumentation).
   skipDelete: true
   bindings:
     - name: tests_namespace
@@ -53,6 +54,8 @@ spec:
                 value: ($values.language)
               - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
                 value: ($values.depot_pull_token)
+              - name: OTEL_DISTRO_NAME
+                value: ($values.otel_distro_name)
             content: |
               #!/bin/bash
               set -euo pipefail
@@ -70,12 +73,15 @@ spec:
 
               kubectl get namespace odigos-system >/dev/null
               echo "deploying tail-sampling app from ${app_dir}"
+              if [ -n "${OTEL_DISTRO_NAME:-}" ]; then
+                echo "using otel distro override: ${OTEL_DISTRO_NAME}"
+              fi
               cd "${app_dir}"
               if [ -n "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
-                make apply
+                make apply OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
                 make rollout
               else
-                make deploy
+                make deploy OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
               fi
 
     - name: apply data streams to sources

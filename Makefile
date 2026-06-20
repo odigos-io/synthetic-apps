@@ -26,15 +26,18 @@ test-runtime-version: check-chainsaw
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
 # Usage: make test-tail-sampling LANGUAGE=nodejs|python|java
+# Usage: make test-tail-sampling LANGUAGE=java OTEL_DISTRO_NAME=opentelemetry-ebpf-instrumentation
 # Usage: make test-head-sampling-http LANGUAGE=nodejs
 # Usage: make test-head-sampling-grpc LANGUAGE=nodejs
 LANGUAGE ?= nodejs
+OTEL_DISTRO_NAME ?=
 
 test-tail-sampling: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
 	chainsaw test tests/tail-sampling \
 		--set-string language=$(LANGUAGE) \
-		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
 
 test-head-sampling-http: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
