@@ -1,0 +1,10 @@
+namespace: java-head-sampling
+sources:
+  - name: instrument-head-sampling
+    workload: head-sampling
+  - name: instrument-head-sampling-http-server
+    workload: head-sampling-http-server
+  - name: instrument-head-sampling-http-client
+    workload: head-sampling-http-client
+  - name: instrument-kubelet-health-probes
+    workload: kubelet-health-probes

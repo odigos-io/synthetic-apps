@@ -41,9 +41,10 @@ test-tail-sampling: check-chainsaw
 
 test-head-sampling-http: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
-	chainsaw test tests/head-sampling-http \
+	chainsaw test scenarios/head-sampling-http/test \
 		--set-string language=$(LANGUAGE) \
-		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
 test-url-templatization: check-chainsaw

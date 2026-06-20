@@ -15,7 +15,7 @@ inputs:
     description: 'Odigos tier to install (enterprise or oss)'
     required: true
   otel_distro_name:
-    description: 'Optional otelDistroName override for scenario Source manifests (tail-sampling only)'
+    description: 'Optional otelDistroName override for scenario Source manifests (tail-sampling, head-sampling-http)'
     required: false
     default: ''
 

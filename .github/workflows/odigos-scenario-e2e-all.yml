@@ -19,6 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          #### Tail Sampling ####
           - scenario: tail-sampling
             tier: oss
             language: nodejs
@@ -43,6 +44,8 @@ jobs:
             tier: enterprise
             language: java
             otel_distro_name: java-enterprise
+
+          #### Head Sampling HTTP ####
           - scenario: head-sampling-http
             tier: oss
             language: nodejs
@@ -51,6 +54,12 @@ jobs:
             tier: enterprise
             language: nodejs
             otel_distro_name: 'nodejs-enterprise'
+          - scenario: head-sampling-http
+            tier: enterprise
+            language: java
+            otel_distro_name: 'java-enterprise'
+
+          #### Head Sampling gRPC ####
           - scenario: head-sampling-grpc
             tier: oss
             language: nodejs

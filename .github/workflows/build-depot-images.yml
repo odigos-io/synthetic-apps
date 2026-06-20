@@ -6,9 +6,8 @@ on:
     branches:
       - main
     paths:
-      - 'nodejs/head-sampling/**'
       - 'nodejs/grpc/**'
-      - 'python/head-sampling/**'
+      - 'scenarios/head-sampling-http/**'
       - 'scenarios/tail-sampling/**'
       - '.github/workflows/build-depot-images.yml'
 
@@ -35,8 +34,8 @@ jobs:
           project: ddgftn5pcl
           push: true
           platforms: linux/amd64,linux/arm64
-          file: nodejs/head-sampling/deployments/head-sampling/Dockerfile
-          context: nodejs/head-sampling
+          file: scenarios/head-sampling-http/nodejs/deployments/head-sampling/Dockerfile
+          context: scenarios/head-sampling-http/nodejs
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-head-sampling-http
 
       - name: Build and push python-head-sampling-http
@@ -45,8 +44,8 @@ jobs:
           project: ddgftn5pcl
           push: true
           platforms: linux/amd64,linux/arm64
-          file: python/head-sampling/deployments/head-sampling/Dockerfile
-          context: python/head-sampling
+          file: scenarios/head-sampling-http/python/deployments/head-sampling/Dockerfile
+          context: scenarios/head-sampling-http/python
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:python-head-sampling-http
 
       - name: Build and push nodejs-grpc
