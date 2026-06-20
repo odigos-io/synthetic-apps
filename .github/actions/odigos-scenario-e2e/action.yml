@@ -87,7 +87,11 @@ runs:
         DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ env.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
       run: |
         sudo ln -sf /bin/bash /usr/bin/sh
-        test_dir="tests/${{ inputs.scenario }}"
+        if [[ -d "scenarios/${{ inputs.scenario }}/test" ]]; then
+          test_dir="scenarios/${{ inputs.scenario }}/test"
+        else
+          test_dir="tests/${{ inputs.scenario }}"
+        fi
         if [[ "${{ inputs.scenario }}" == "url-templatization" ]]; then
           chainsaw test "${test_dir}"
         else

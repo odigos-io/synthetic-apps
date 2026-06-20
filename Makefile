@@ -34,7 +34,7 @@ OTEL_DISTRO_NAME ?=
 
 test-tail-sampling: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
-	chainsaw test tests/tail-sampling \
+	chainsaw test scenarios/tail-sampling/test \
 		--set-string language=$(LANGUAGE) \
 		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
 		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)

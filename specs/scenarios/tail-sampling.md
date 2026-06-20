@@ -10,7 +10,7 @@ Synthetic app for Odigos **tail sampling** (workload collector): cost reduction,
 | `tail-sampling-errors` | `deployments/errors/sampling.yaml` | `tail-sampling-errors-curls` |
 | `tail-sampling-duration` | `deployments/duration/sampling.yaml` | `tail-sampling-duration-curls` |
 
-E2E: [`tests/tail-sampling/chainsaw-test.yaml`](../../tests/tail-sampling/chainsaw-test.yaml) (dry run on, span + metric asserts for errors/duration Jobs; main Deployment — config assert + curls, span batch TBD).
+E2E: [`scenarios/tail-sampling/test/chainsaw-test.yaml`](../../scenarios/tail-sampling/test/chainsaw-test.yaml) (dry run on, span + metric asserts for errors/duration Jobs; main Deployment — config assert + curls, span batch TBD).
 
 ---
 
@@ -72,7 +72,7 @@ Fixed path delays: **short** ~50ms, **medium** ~750ms, **long** ~1500ms. Query `
 
 ## Dry run attributes
 
-With `sampling.dryRun: true`, spans still export: `odigos.sampling.category`, `odigos.sampling.span.matching_rule.*`, `odigos.sampling.trace.deciding_rule.*`, and sometimes `odigos.sampling.trace.kept`. Assert via [`simple_trace_db_span_query_runner.sh`](../../tests/common/assert/simple_trace_db_span_query_runner.sh) + `SpanBatchTest` YAML under `tests/tail-sampling/queries/`.
+With `sampling.dryRun: true`, spans still export: `odigos.sampling.category`, `odigos.sampling.span.matching_rule.*`, `odigos.sampling.trace.deciding_rule.*`, and sometimes `odigos.sampling.trace.kept`. Assert via [`simple_trace_db_span_query_runner.sh`](../../tests/common/assert/simple_trace_db_span_query_runner.sh) + `SpanBatchTest` YAML under `scenarios/tail-sampling/test/queries/`.
 
 ## Implementing
 

@@ -19,7 +19,7 @@ spec:
     - name: Create Tests Namespace
       try:
         - script:
-            workDir: ../../
+            workDir: ../../../
             env:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
@@ -36,7 +36,7 @@ spec:
     - name: Install Simple Trace Db
       try:
         - apply:
-            file: ../common/apply/simple-trace-db-deployment.yaml
+            file: ../../../tests/common/apply/simple-trace-db-deployment.yaml
             template: true
 
     - name: Add Destination
@@ -60,8 +60,7 @@ spec:
               #!/bin/bash
               set -euo pipefail
 
-              repo_root="$(cd ../.. && pwd)"
-              app_dir="${repo_root}/scenarios/tail-sampling/${LANGUAGE}"
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
               if [ ! -d "${app_dir}" ]; then
                 echo "unknown language: ${LANGUAGE} (expected ${app_dir})"
                 exit 1
@@ -91,7 +90,7 @@ spec:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
             content: |
-              ../common/apply/apply-data-stream-to-sources.sh
+              ../../../tests/common/apply/apply-data-stream-to-sources.sh
 
     - name: assert workload collector sampling config
       try:
@@ -116,7 +115,7 @@ spec:
                 value: ($tests_namespace)
             content: |
               export NAMESPACE="$TESTS_NAMESPACE"
-              ../common/assert/wait-for-pods-instrumented.sh
+              ../../../tests/common/assert/wait-for-pods-instrumented.sh
       catch:
         - script:
             env:
@@ -150,7 +149,7 @@ spec:
             content: |
               #!/bin/bash
               set -euo pipefail
-              ../common/assert/victoriametrics_sampling_metrics_runner.sh record-baseline \
+              ../../../tests/common/assert/victoriametrics_sampling_metrics_runner.sh record-baseline \
                 ./queries/metrics/trace-sampling-metrics.yaml \
                 "$METRICS_BASELINE_FILE"
 
@@ -165,8 +164,7 @@ spec:
               #!/bin/bash
               set -euo pipefail
 
-              repo_root="$(cd ../.. && pwd)"
-              app_dir="${repo_root}/scenarios/tail-sampling/${LANGUAGE}"
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
               cd "${app_dir}"
               make trigger
 
@@ -182,7 +180,7 @@ spec:
               set -euo pipefail
               deadline=$(($(date +%s) + 120))
               while true; do
-                if ../common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans "$TRACE_NAMESPACE" simple-trace-db; then
+                if ../../../tests/common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans "$TRACE_NAMESPACE" simple-trace-db; then
                   exit 0
                 fi
                 if [[ $(date +%s) -ge deadline ]]; then
@@ -197,7 +195,7 @@ spec:
               - name: TRACE_NAMESPACE
                 value: ($namespace)
             content: |
-              ../common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans --verbose "$TRACE_NAMESPACE" simple-trace-db
+              ../../../tests/common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans --verbose "$TRACE_NAMESPACE" simple-trace-db
 
     - name: Assert sampling trace metrics
       try:
@@ -213,7 +211,7 @@ spec:
               set -euo pipefail
               deadline=$(($(date +%s) + 120))
               while true; do
-                if ../common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
+                if ../../../tests/common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
                   ./queries/metrics/trace-sampling-metrics.yaml \
                   "$METRICS_BASELINE_FILE"; then
                   exit 0
@@ -234,7 +232,7 @@ spec:
             content: |
               #!/bin/bash
               set -euo pipefail
-              ../common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
+              ../../../tests/common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
                 ./queries/metrics/trace-sampling-metrics.yaml \
                 "$METRICS_BASELINE_FILE" || true
               echo "--- current totals by rule name (match / keep / drop) ---"
