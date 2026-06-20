@@ -1,0 +1,75 @@
+name: Build Depot Runtime Versions Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scenarios/runtime-versions/**'
+      - '.github/workflows/build-depot-runtime-versions-images.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DEPOT_REGISTRY: 'p0xd21zf5r.registry.depot.dev'
+
+jobs:
+  build-runtime-versions:
+    runs-on: depot-ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - lang: nodejs
+          #   variant: versionlatest
+          # - lang: nodejs
+          #   variant: versionminimum
+          # - lang: nodejs
+          #   variant: versionunsupported
+          # - lang: nodejs
+          #   variant: versionveryold
+          - lang: python
+            variant: versionlatest
+          - lang: python
+            variant: versionminimum
+          - lang: python
+            variant: versionminimumlegacy
+          - lang: python
+            variant: versionunsupported
+          - lang: python
+            variant: versionveryold
+          # - lang: java
+          #   variant: versionlatest
+          # - lang: java
+          #   variant: versionminimum
+          # - lang: java
+          #   variant: versionunsupported
+          # - lang: java
+          #   variant: versionveryold
+          # - lang: golang
+          #   variant: versionlatest
+          # - lang: golang
+          #   variant: versionminimum
+          # - lang: golang
+          #   variant: versionunsupported
+          # - lang: golang
+          #   variant: versionveryold
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: depot/setup-action@v1
+      - name: Login to Depot Registry
+        run: docker login --username x-token --password ${{ secrets.DEPOT_SYNTHTIC_APPS_PUSH_TOKEN }} ${DEPOT_REGISTRY}
+
+      - name: Build and push ${{ matrix.lang }}-runtime-versions-${{ matrix.variant }}
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/runtime-versions/${{ matrix.lang }}/deployments/${{ matrix.variant }}/Dockerfile
+          context: scenarios/runtime-versions/${{ matrix.lang }}
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:${{ matrix.lang }}-runtime-versions-${{ matrix.variant }}
