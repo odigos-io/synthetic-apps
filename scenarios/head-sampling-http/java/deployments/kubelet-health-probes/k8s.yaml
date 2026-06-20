@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: kubelet-health-probes
-          image: ghcr.io/odigos-io/synthetic-apps/java-head-sampling:head-sampling
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:java-head-sampling-http
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

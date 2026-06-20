@@ -48,6 +48,16 @@ jobs:
           context: scenarios/head-sampling-http/python
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:python-head-sampling-http
 
+      - name: Build and push java-head-sampling-http
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/head-sampling-http/java/deployments/head-sampling/Dockerfile
+          context: scenarios/head-sampling-http/java
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:java-head-sampling-http
+
       - name: Build and push nodejs-grpc
         uses: depot/build-push-action@v1
         with:

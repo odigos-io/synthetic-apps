@@ -3,13 +3,15 @@ NAMESPACE ?= java-head-sampling
 include ../../../depot.mk
 include ../scenario.mk
 
+IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:java-head-sampling-http
+
 .PHONY: build
 build:
-	docker build -f deployments/head-sampling/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/java-head-sampling:head-sampling .
+	docker build -f deployments/head-sampling/Dockerfile -t $(IMAGE) .
 
 .PHONY: load-to-kind
 load-to-kind:
-	kind load docker-image ghcr.io/odigos-io/synthetic-apps/java-head-sampling:head-sampling
+	kind load docker-image $(IMAGE)
 
 .PHONY: apply
 apply: ensure-namespace
