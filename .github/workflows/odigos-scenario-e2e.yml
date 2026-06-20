@@ -21,6 +21,14 @@ on:
         required: true
         type: string
         default: nodejs
+      tier:
+        description: 'Odigos tier to install'
+        required: true
+        type: choice
+        options:
+          - enterprise
+          - oss
+        default: enterprise
 
 env:
   DEPOT_REGISTRY: p0xd21zf5r.registry.depot.dev
@@ -49,9 +57,11 @@ jobs:
           .github/scripts/create-kind-cluster.sh
 
       - name: Install Odigos
+        env:
+          ODIGOS_ONPREM_TOKEN: ${{ inputs.tier == 'enterprise' && secrets.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI || '' }}
         run: |
           chmod +x .github/scripts/install-odigos-helm.sh
-          .github/scripts/install-odigos-helm.sh "${{ inputs.odigos_version }}"
+          .github/scripts/install-odigos-helm.sh "${{ inputs.odigos_version }}" "${{ inputs.tier }}"
 
       - name: Wait for Odigos to be ready
         run: |
