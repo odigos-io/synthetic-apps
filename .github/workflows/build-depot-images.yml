@@ -34,4 +34,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: nodejs/head-sampling/deployments/head-sampling/Dockerfile
           context: nodejs/head-sampling
-          tags: ${{ env.DEPOT_REGISTRY }}/nodejs-head-sampling-http:latest
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-head-sampling-http
