@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: grpc-relay
-          image: ghcr.io/odigos-io/synthetic-apps/nodejs-grpc:grpc
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-grpc
           imagePullPolicy: IfNotPresent
           env:
             - name: GRPC_ENABLE_SERVER

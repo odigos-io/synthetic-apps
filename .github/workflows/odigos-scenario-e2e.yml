@@ -91,7 +91,7 @@ jobs:
         run: |
           sudo ln -sf /bin/bash /usr/bin/sh
           test_dir="tests/${{ inputs.scenario }}"
-          if [[ "${{ inputs.scenario }}" == "head-sampling-grpc" || "${{ inputs.scenario }}" == "url-templatization" ]]; then
+          if [[ "${{ inputs.scenario }}" == "url-templatization" ]]; then
             chainsaw test "${test_dir}"
           else
             IFS=',' read -ra langs <<< "${{ inputs.languages }}"
