@@ -139,12 +139,14 @@ spec:
             env:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
+              - name: METRICS_BASELINE_FILE
+                value: ($metrics_baseline_file)
             content: |
               #!/bin/bash
               set -euo pipefail
               ../common/assert/victoriametrics_sampling_metrics_runner.sh record-baseline \
                 ./queries/metrics/trace-sampling-metrics.yaml \
-                ($metrics_baseline_file)
+                "$METRICS_BASELINE_FILE"
 
     - name: trigger traffic
       try:
@@ -198,6 +200,8 @@ spec:
             env:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
+              - name: METRICS_BASELINE_FILE
+                value: ($metrics_baseline_file)
             content: |
               #!/bin/bash
               set -euo pipefail
@@ -205,7 +209,7 @@ spec:
               while true; do
                 if ../common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
                   ./queries/metrics/trace-sampling-metrics.yaml \
-                  ($metrics_baseline_file); then
+                  "$METRICS_BASELINE_FILE"; then
                   exit 0
                 fi
                 if [[ $(date +%s) -ge deadline ]]; then
@@ -219,12 +223,14 @@ spec:
             env:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
+              - name: METRICS_BASELINE_FILE
+                value: ($metrics_baseline_file)
             content: |
               #!/bin/bash
               set -euo pipefail
               ../common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
                 ./queries/metrics/trace-sampling-metrics.yaml \
-                ($metrics_baseline_file) || true
+                "$METRICS_BASELINE_FILE" || true
               echo "--- current totals by rule name (match / keep / drop) ---"
               base="http://odigos-victoriametrics.odigos-system.svc.cluster.local:8428"
               for deployment in tail-sampling-errors tail-sampling-duration; do
