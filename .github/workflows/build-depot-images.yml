@@ -8,10 +8,8 @@ on:
     paths:
       - 'nodejs/head-sampling/**'
       - 'nodejs/grpc/**'
-      - 'nodejs/tail-sampling/**'
       - 'python/head-sampling/**'
-      - 'python/tail-sampling/**'
-      - 'java/tail-sampling/**'
+      - 'scenarios/tail-sampling/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -67,8 +65,8 @@ jobs:
           project: ddgftn5pcl
           push: true
           platforms: linux/amd64,linux/arm64
-          file: nodejs/tail-sampling/deployments/tail-sampling/Dockerfile
-          context: nodejs/tail-sampling
+          file: scenarios/tail-sampling/nodejs/deployments/tail-sampling/Dockerfile
+          context: scenarios/tail-sampling/nodejs
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-tail-sampling
 
       - name: Build and push python-tail-sampling
@@ -77,8 +75,8 @@ jobs:
           project: ddgftn5pcl
           push: true
           platforms: linux/amd64,linux/arm64
-          file: python/tail-sampling/deployments/tail-sampling/Dockerfile
-          context: python/tail-sampling
+          file: scenarios/tail-sampling/python/deployments/tail-sampling/Dockerfile
+          context: scenarios/tail-sampling/python
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:python-tail-sampling
 
       - name: Build and push java-tail-sampling
@@ -87,6 +85,6 @@ jobs:
           project: ddgftn5pcl
           push: true
           platforms: linux/amd64,linux/arm64
-          file: java/tail-sampling/deployments/tail-sampling/Dockerfile
-          context: java/tail-sampling
+          file: scenarios/tail-sampling/java/deployments/tail-sampling/Dockerfile
+          context: scenarios/tail-sampling/java
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:java-tail-sampling

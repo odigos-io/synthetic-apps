@@ -2,7 +2,7 @@
 
 Synthetic app for Odigos **tail sampling** (workload collector): cost reduction, duration thresholds, errors, route / route-prefix match, multi-hop traces, and dry-run `odigos.sampling.*` attributes on exported spans.
 
-**One binary, three Deployments** — same image and full route table on each; traffic target + scoped [`Sampling`](../../nodejs/tail-sampling/deployments/tail-sampling/sampling.yaml) CR pick the scenario. Reference: [`nodejs/tail-sampling/`](../../nodejs/tail-sampling/). HTTP **8080**, GET, deterministic JSON; `?error=true` → **500** where supported.
+**One binary, three Deployments** — same image and full route table on each; traffic target + scoped [`Sampling`](../../scenarios/tail-sampling/nodejs/deployments/tail-sampling/sampling.yaml) CR pick the scenario. Reference: [`scenarios/tail-sampling/nodejs/`](../../scenarios/tail-sampling/nodejs/). HTTP **8080**, GET, deterministic JSON; `?error=true` → **500** where supported.
 
 | Deployment | Sampling manifest | Curl Job (`make trigger`) |
 |------------|-------------------|---------------------------|

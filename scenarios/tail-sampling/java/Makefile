@@ -1,6 +1,6 @@
 NAMESPACE ?= java-tail-sampling
 
-include ../../depot.mk
+include ../../../depot.mk
 
 IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:java-tail-sampling
 

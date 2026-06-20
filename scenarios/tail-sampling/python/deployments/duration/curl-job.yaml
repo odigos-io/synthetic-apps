@@ -1,18 +1,18 @@
-# One-off Job: curls tail-sampling-errors endpoints for error tail-sampling tests.
-# Trigger with: make trigger (from python/tail-sampling)
+# One-off Job: curls tail-sampling-duration endpoints for duration tail-sampling tests.
+# Trigger with: make trigger (from scenarios/tail-sampling/python)
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: tail-sampling-errors-curls
+  name: tail-sampling-duration-curls
   labels:
     odigos.io/test-infra: "true"
 spec:
   ttlSecondsAfterFinished: 600
-  backoffLimit: 0
+  backoffLimit: 2
   template:
     metadata:
       labels:
-        app: tail-sampling-errors-curls
+        app: tail-sampling-duration-curls
         odigos.io/test-infra: "true"
     spec:
       restartPolicy: Never
@@ -25,18 +25,11 @@ spec:
           args:
             - |
               set -eu
-              BASE_URL="http://${TAIL_SAMPLING_ERRORS_SERVICE_HOST}:${TAIL_SAMPLING_ERRORS_SERVICE_PORT}"
+              BASE_URL="http://${TAIL_SAMPLING_DURATION_SERVICE_HOST}:${TAIL_SAMPLING_DURATION_SERVICE_PORT}"
               echo "BASE_URL=${BASE_URL}"
 
               call_ok() {
                 curl -sS -f -o /dev/null "${BASE_URL}$1"
-              }
-              call_err() {
-                code=$(curl -sS -o /dev/null -w "%{http_code}" "${BASE_URL}$1")
-                if [ "$code" != "500" ]; then
-                  echo "expected HTTP 500 for $1 got $code" >&2
-                  exit 1
-                fi
               }
               call_many_ok() {
                 count=$1
@@ -49,9 +42,10 @@ spec:
               }
 
               call_ok "/healthz"
-              call_many_ok 30 "/ok"
-              call_err "/error"
-              call_ok "/alternate"
-              call_err "/alternate"
-              call_ok "/hops?hops=3"
+              call_ok "/duration?ms=0"
+              call_ok "/duration?ms=600"
+              call_ok "/duration?ms=1200"
+              call_many_ok 30 "/duration/short"
+              call_many_ok 6 "/duration/medium"
+              call_ok "/duration/long"
               echo "all curls succeeded"

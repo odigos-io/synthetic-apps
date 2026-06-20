@@ -2,7 +2,7 @@ apiVersion: e2e.tests.odigos.io/v1
 kind: SpanBatchTest
 description: |
   Spans exported after tail-sampling-duration-curls job
-  (nodejs/tail-sampling/deployments/duration/curl-job.yaml).
+  (scenarios/tail-sampling/nodejs/deployments/duration/curl-job.yaml).
   Sampling attrs recorded with dryRun enabled (see odigos-sampling-dry-run-config.yaml).
   Rule names match deployments/duration/sampling.yaml / workload-collector-config assert.
   spanAttributesAny / spanAttributesContainsAny accept legacy (http.status_code, http.target)

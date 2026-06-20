@@ -1,8 +1,8 @@
-NAMESPACE ?= nodejs-tail-sampling
+NAMESPACE ?= python-tail-sampling
 
-include ../../depot.mk
+include ../../../depot.mk
 
-IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:nodejs-tail-sampling
+IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:python-tail-sampling
 
 .PHONY: build
 build:
@@ -14,22 +14,22 @@ load-to-kind:
 
 .PHONY: apply
 apply: ensure-namespace
-	kubectl apply -n nodejs-tail-sampling -f deployments/errors/k8s.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/errors/odigos-instrument.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/duration/k8s.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/duration/odigos-instrument.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/k8s.yaml
-	kubectl apply -n nodejs-tail-sampling -f deployments/tail-sampling/odigos-instrument.yaml
+	kubectl apply -n python-tail-sampling -f deployments/errors/k8s.yaml
+	kubectl apply -n python-tail-sampling -f deployments/errors/odigos-instrument.yaml
+	kubectl apply -n python-tail-sampling -f deployments/duration/k8s.yaml
+	kubectl apply -n python-tail-sampling -f deployments/duration/odigos-instrument.yaml
+	kubectl apply -n python-tail-sampling -f deployments/tail-sampling/k8s.yaml
+	kubectl apply -n python-tail-sampling -f deployments/tail-sampling/odigos-instrument.yaml
 	kubectl apply -n odigos-system -f deployments/errors/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/duration/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/tail-sampling/sampling.yaml
 
 .PHONY: rollout
 rollout:
-	kubectl rollout restart deployment/tail-sampling deployment/tail-sampling-errors deployment/tail-sampling-duration -n nodejs-tail-sampling
-	kubectl rollout status deployment/tail-sampling -n nodejs-tail-sampling --timeout=120s
-	kubectl rollout status deployment/tail-sampling-errors -n nodejs-tail-sampling --timeout=120s
-	kubectl rollout status deployment/tail-sampling-duration -n nodejs-tail-sampling --timeout=120s
+	kubectl rollout restart deployment/tail-sampling deployment/tail-sampling-errors deployment/tail-sampling-duration -n python-tail-sampling
+	kubectl rollout status deployment/tail-sampling -n python-tail-sampling --timeout=120s
+	kubectl rollout status deployment/tail-sampling-errors -n python-tail-sampling --timeout=120s
+	kubectl rollout status deployment/tail-sampling-duration -n python-tail-sampling --timeout=120s
 
 .PHONY: deploy
 deploy:
@@ -40,8 +40,8 @@ deploy:
 
 .PHONY: status
 status:
-	kubectl get pods -n nodejs-tail-sampling
-	kubectl get services -n nodejs-tail-sampling
+	kubectl get pods -n python-tail-sampling
+	kubectl get services -n python-tail-sampling
 
 .PHONY: call-endpoints
 call-endpoints:
@@ -73,16 +73,16 @@ endif
 ifndef TIMEOUT
 	$(error trigger-job requires TIMEOUT=... (or run 'make trigger'))
 endif
-	kubectl delete job $(JOB) -n nodejs-tail-sampling --ignore-not-found=true
-	kubectl apply -n nodejs-tail-sampling -f $(MANIFEST)
-	kubectl wait --for=condition=complete job/$(JOB) -n nodejs-tail-sampling --timeout=$(TIMEOUT) || \
-		(kubectl logs job/$(JOB) -n nodejs-tail-sampling --tail=200; exit 1)
-	kubectl logs job/$(JOB) -n nodejs-tail-sampling
+	kubectl delete job $(JOB) -n python-tail-sampling --ignore-not-found=true
+	kubectl apply -n python-tail-sampling -f $(MANIFEST)
+	kubectl wait --for=condition=complete job/$(JOB) -n python-tail-sampling --timeout=$(TIMEOUT) || \
+		(kubectl logs job/$(JOB) -n python-tail-sampling --tail=200; exit 1)
+	kubectl logs job/$(JOB) -n python-tail-sampling
 endif
 
 .PHONY: clean
 clean:
-	kubectl delete namespace nodejs-tail-sampling --ignore-not-found=true
+	kubectl delete namespace python-tail-sampling --ignore-not-found=true
 	kubectl delete -n odigos-system -f deployments/tail-sampling/sampling.yaml --ignore-not-found=true
 	kubectl delete -n odigos-system -f deployments/errors/sampling.yaml --ignore-not-found=true
 	kubectl delete -n odigos-system -f deployments/duration/sampling.yaml --ignore-not-found=true

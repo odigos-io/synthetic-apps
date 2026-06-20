@@ -58,7 +58,7 @@ spec:
               set -euo pipefail
 
               repo_root="$(cd ../.. && pwd)"
-              app_dir="${repo_root}/${LANGUAGE}/tail-sampling"
+              app_dir="${repo_root}/scenarios/tail-sampling/${LANGUAGE}"
               if [ ! -d "${app_dir}" ]; then
                 echo "unknown language: ${LANGUAGE} (expected ${app_dir})"
                 exit 1
@@ -160,7 +160,7 @@ spec:
               set -euo pipefail
 
               repo_root="$(cd ../.. && pwd)"
-              app_dir="${repo_root}/${LANGUAGE}/tail-sampling"
+              app_dir="${repo_root}/scenarios/tail-sampling/${LANGUAGE}"
               cd "${app_dir}"
               make trigger
 

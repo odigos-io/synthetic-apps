@@ -1,5 +1,5 @@
 # One-off Job: curls tail-sampling endpoints for trace verification (matches scripts/call-endpoints.sh).
-# Trigger with: make trigger (from nodejs/tail-sampling)
+# Trigger with: make trigger (from scenarios/tail-sampling/nodejs)
 apiVersion: batch/v1
 kind: Job
 metadata:
