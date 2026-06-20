@@ -22,6 +22,9 @@ on:
         type: string
         default: nodejs
 
+env:
+  DEPOT_REGISTRY: p0xd21zf5r.registry.depot.dev
+
 jobs:
   scenario-e2e:
     runs-on: depot-ubuntu-24.04-2
@@ -34,12 +37,18 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v5
 
-      - name: Create Kind cluster
+      - name: Install kind
         uses: helm/kind-action@v1.14.0
         with:
           version: "v0.25.0"
-          cluster_name: kind
-          config: tests/kind-config.yaml
+          install_only: true
+
+      - name: Create Kind cluster
+        env:
+          DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
+        run: |
+          chmod +x .github/scripts/create-kind-cluster.sh
+          .github/scripts/create-kind-cluster.sh
 
       - name: Install Odigos
         run: |
