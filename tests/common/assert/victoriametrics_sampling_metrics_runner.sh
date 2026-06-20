@@ -10,10 +10,47 @@
 #   victoriaMetrics: { namespace, service, port }
 #   metrics: { match, keep, drop }  # Prometheus metric names
 #   rules:
-#     - ruleId: ...
+#     - ruleId: ...           # optional; resolved from InstrumentationConfig when omitted
+#     - ruleName: ...
+#     - deployment: ...
 #       expected: { match: N, keep: N, drop: N }
 #
 set -euo pipefail
+
+resolve_rule_id() {
+  local file=$1
+  local rule_index=$2
+  local rule_id rule_name deployment namespace ic_name
+
+  rule_id=$(yq e ".rules[${rule_index}].ruleId // \"\"" "$file")
+  if [[ -n "$rule_id" && "$rule_id" != "null" ]]; then
+    printf '%s' "$rule_id"
+    return
+  fi
+
+  rule_name=$(yq e ".rules[${rule_index}].ruleName" "$file")
+  deployment=$(yq e ".rules[${rule_index}].deployment" "$file")
+  namespace="${TESTS_NAMESPACE:-}"
+  if [[ -z "$namespace" ]]; then
+    echo "ruleId missing for rules[${rule_index}] and TESTS_NAMESPACE is not set" >&2
+    exit 1
+  fi
+
+  ic_name="deployment-${deployment}"
+  rule_id=$(
+    kubectl get instrumentationconfig "$ic_name" -n "$namespace" -o json | jq -r --arg name "$rule_name" '
+      .spec.workloadCollectorConfig[0].samplingCollectorConfig as $sc |
+      (($sc.highlyRelevantOperations // []) + ($sc.costReductionRules // []))
+      | map(select(.name == $name))
+      | .[0].id // empty
+    '
+  )
+  if [[ -z "$rule_id" ]]; then
+    echo "Could not resolve rule id for ${deployment}/${rule_name} in namespace ${namespace}" >&2
+    exit 1
+  fi
+  printf '%s' "$rule_id"
+}
 
 yq_read() {
   local file=$1
@@ -94,7 +131,7 @@ record_baseline() {
 
   rm -f "$baseline_file.tmp"
   for ((i = 0; i < rule_count; i++)); do
-    rule_id=$(yq e ".rules[${i}].ruleId" "$file")
+    rule_id=$(resolve_rule_id "$file" "$i")
     match_v=$(sum_metric_for_rule_id "$base_url" "$metric_match" "$rule_id")
     keep_v=$(sum_metric_for_rule_id "$base_url" "$metric_keep" "$rule_id")
     drop_v=$(sum_metric_for_rule_id "$base_url" "$metric_drop" "$rule_id")
@@ -151,7 +188,7 @@ assert_delta() {
   echo "VictoriaMetrics: ${base_url}"
 
   for ((i = 0; i < rule_count; i++)); do
-    rule_id=$(yq e ".rules[${i}].ruleId" "$file")
+    rule_id=$(resolve_rule_id "$file" "$i")
     rule_name=$(yq e ".rules[${i}].ruleName" "$file")
     deployment=$(yq e ".rules[${i}].deployment" "$file")
     description=$(yq e ".rules[${i}].description // \"\"" "$file")

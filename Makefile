@@ -25,18 +25,16 @@ test-runtime-version: check-chainsaw
 	chainsaw test tests/runtime-version
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
-# Usage: make test-tail-sampling LANGUAGE=nodejs
+# Usage: make test-tail-sampling LANGUAGE=nodejs|python
 # Usage: make test-head-sampling-http LANGUAGE=nodejs
 # Usage: make test-head-sampling-grpc LANGUAGE=nodejs
 LANGUAGE ?= nodejs
 
 test-tail-sampling: check-chainsaw
-	@test "$(filter $(LANGUAGE),nodejs)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs" && exit 1)
-	@if [ -n "$$DEPOT_SYNTHTIC_APPS_PULL_TOKEN" ]; then \
-		chainsaw test tests/tail-sampling --set-string language=$(LANGUAGE) --set-string depot_pull_token=$$DEPOT_SYNTHTIC_APPS_PULL_TOKEN; \
-	else \
-		chainsaw test tests/tail-sampling --set-string language=$(LANGUAGE); \
-	fi
+	@test "$(filter $(LANGUAGE),nodejs python)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python" && exit 1)
+	chainsaw test tests/tail-sampling \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}
 
 test-head-sampling-http: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)

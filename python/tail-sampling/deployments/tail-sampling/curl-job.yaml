@@ -1,0 +1,84 @@
+# One-off Job: curls tail-sampling endpoints for trace verification (matches scripts/call-endpoints.sh).
+# Trigger with: make trigger (from python/tail-sampling)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tail-sampling-curls
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: tail-sampling-curls
+        odigos.io/test-infra: "true"
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              # Avoid relying on cluster DNS; kube injects Service env for tail-sampling:8080.
+              BASE_URL="http://${TAIL_SAMPLING_SERVICE_HOST}:${TAIL_SAMPLING_SERVICE_PORT}"
+              echo "BASE_URL=${BASE_URL}"
+
+              call_ok() {
+                path=$1
+                echo "CALL ok  GET ${path}"
+                if curl -sS -f -o /dev/null "${BASE_URL}${path}"; then
+                  echo "OK   GET ${path} -> success (2xx)"
+                else
+                  echo "FAIL GET ${path} -> unexpected status" >&2
+                  exit 1
+                fi
+              }
+              call_err() {
+                path=$1
+                echo "CALL err GET ${path}"
+                code=$(curl -sS -o /dev/null -w "%{http_code}" "${BASE_URL}${path}")
+                if [ "$code" = "500" ]; then
+                  echo "OK   GET ${path} -> error (500)"
+                else
+                  echo "FAIL GET ${path} -> expected 500 got ${code}" >&2
+                  exit 1
+                fi
+              }
+              call_many_ok() {
+                count=$1
+                path=$2
+                echo "CALL ok  GET ${path} x${count}"
+                i=1
+                while [ "$i" -le "$count" ]; do
+                  if curl -sS -f -o /dev/null "${BASE_URL}${path}"; then
+                    echo "OK   GET ${path} [${i}/${count}] -> success (2xx)"
+                  else
+                    echo "FAIL GET ${path} [${i}/${count}] -> unexpected status" >&2
+                    exit 1
+                  fi
+                  i=$((i + 1))
+                done
+              }
+
+              call_ok "/healthz"
+              call_ok "/sampling/tail/no-rule"
+              call_err "/sampling/tail/no-rule?error=true"
+              call_ok "/sampling/tail/error"
+              call_err "/sampling/tail/error?error=true"
+              call_many_ok 30 "/sampling/tail/duration/short"
+              call_err "/sampling/tail/duration/short?error=true"
+              call_many_ok 6 "/sampling/tail/duration/medium"
+              call_err "/sampling/tail/duration/medium?error=true"
+              call_ok "/sampling/tail/duration/long"
+              call_err "/sampling/tail/duration/long?error=true"
+              call_ok "/sampling/tail/hops?hops=3"
+              call_err "/sampling/tail/hops?hops=3&error=true"
+              call_ok "/sampling/tail/hops/non-propagating-error?hops=3"
+              call_ok "/sampling/tail/hops/non-propagating-error?hops=3&error=true"
+              echo "all curls succeeded"

@@ -4,7 +4,7 @@ description: |
   Spans exported after tail-sampling-errors-curls job
   (nodejs/tail-sampling/deployments/errors/curl-job.yaml).
   Sampling attrs recorded with dryRun enabled (see odigos-sampling-dry-run-config.yaml).
-  Rule IDs match deployments/errors/sampling.yaml / workload-collector-config assert.
+  Rule names match deployments/*/sampling.yaml / workload-collector-config assert.
 serviceName: tail-sampling-errors
 resourceAttributesEndsWith:
   k8s.namespace.name: "-tail-sampling"
@@ -54,10 +54,8 @@ spans:
       http.status_code: 200
       odigos.sampling.category: 'cost reduction'
       odigos.sampling.dry_run: true
-      odigos.sampling.span.matching_rule.id: 2776299379c7199c
       odigos.sampling.span.matching_rule.name: cost-reduction-ok-baseline
       odigos.sampling.span.matching_rule.keep_percentage: 10
-      odigos.sampling.trace.deciding_rule.id: 2776299379c7199c
       odigos.sampling.trace.deciding_rule.keep_percentage: 10
       odigos.sampling.trace.deciding_rule.name: cost-reduction-ok-baseline
     expected:
@@ -74,10 +72,8 @@ spans:
       http.status_code: 500
       odigos.sampling.category: 'highly relevant'
       odigos.sampling.dry_run: true
-      odigos.sampling.span.matching_rule.id: 9d82dd7a5149133d
       odigos.sampling.span.matching_rule.name: high-relevance-error
       odigos.sampling.span.matching_rule.keep_percentage: 100
-      odigos.sampling.trace.deciding_rule.id: 9d82dd7a5149133d
       odigos.sampling.trace.deciding_rule.keep_percentage: 100
       odigos.sampling.trace.deciding_rule.name: high-relevance-error
       odigos.sampling.trace.kept: true
@@ -110,10 +106,8 @@ spans:
       http.status_code: 500
       odigos.sampling.category: 'highly relevant'
       odigos.sampling.dry_run: true
-      odigos.sampling.span.matching_rule.id: 9d82dd7a5149133d
       odigos.sampling.span.matching_rule.name: high-relevance-error
       odigos.sampling.span.matching_rule.keep_percentage: 100
-      odigos.sampling.trace.deciding_rule.id: 9d82dd7a5149133d
       odigos.sampling.trace.deciding_rule.keep_percentage: 100
       odigos.sampling.trace.deciding_rule.name: high-relevance-error
       odigos.sampling.trace.kept: true
@@ -134,7 +128,6 @@ spans:
       http.status_code: 200
       odigos.sampling.category: 'highly relevant'
       odigos.sampling.dry_run: true
-      odigos.sampling.trace.deciding_rule.id: 9d82dd7a5149133d
       odigos.sampling.trace.deciding_rule.keep_percentage: 100
       odigos.sampling.trace.deciding_rule.name: high-relevance-error
       odigos.sampling.trace.kept: true

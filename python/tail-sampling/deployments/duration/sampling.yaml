@@ -1,0 +1,33 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: python-tail-sampling-duration-rules
+  namespace: odigos-system
+spec:
+  name: python tail-sampling duration rules
+  notes: >-
+    Tail sampling for duration scenarios on Deployment tail-sampling-duration in
+    python-tail-sampling. Operations above 1000ms are highly relevant (100%).
+    Operations above 500ms are sampled at least 50%. Remaining traffic is
+    cost-reduced to 10%. Apply with:
+    kubectl apply -n odigos-system -f deployments/duration/sampling.yaml
+  highlyRelevantOperations:
+    - name: high-relevance-duration-above-1000ms
+      notes: Operations with duration above 1000ms are highly relevant and sampled at 100%.
+      durationAtLeastMs: 1000
+      percentageAtLeast: 100
+      sourceScopes: &durationDeploymentScopes
+        sources:
+          - kind: Deployment
+            name: tail-sampling-duration
+            namespace: python-tail-sampling
+    - name: duration-above-500ms
+      notes: Operations with duration above 500ms are sampled at least 50%.
+      durationAtLeastMs: 500
+      percentageAtLeast: 50
+      sourceScopes: *durationDeploymentScopes
+  costReductionRules:
+    - name: cost-reduction-rest
+      notes: Remaining duration-scenario traffic is sampled at most 10%.
+      percentageAtMost: 10
+      sourceScopes: *durationDeploymentScopes
