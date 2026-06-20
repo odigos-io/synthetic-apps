@@ -1,0 +1,32 @@
+apiVersion: odigos.io/v1alpha1
+kind: Sampling
+metadata:
+  name: java-tail-sampling-errors-rules
+  namespace: odigos-system
+spec:
+  name: java tail-sampling errors rules
+  notes: >-
+    Tail sampling for error scenarios on Deployment tail-sampling-errors in
+    java-tail-sampling. Error traces are highly relevant (100%). Successful /ok
+    baseline traffic is cost-reduced to 10%. Apply with:
+    kubectl apply -n odigos-system -f deployments/errors/sampling.yaml
+  highlyRelevantOperations:
+    - name: high-relevance-error
+      notes: >-
+        Error traces from /error and propagated /hops failures are sampled at
+        100%.
+      error: true
+      percentageAtLeast: 100
+      sourceScopes: &errorsDeploymentScopes
+        sources:
+          - kind: Deployment
+            name: tail-sampling-errors
+            namespace: java-tail-sampling
+  costReductionRules:
+    - name: cost-reduction-ok-baseline
+      notes: Successful /ok requests are sampled at most 10%.
+      percentageAtMost: 10
+      operation:
+        httpServer:
+          route: /ok
+      sourceScopes: *errorsDeploymentScopes

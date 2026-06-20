@@ -21,10 +21,10 @@ jobs:
         include:
           - scenario: tail-sampling
             tier: oss
-            languages: nodejs,python
+            languages: nodejs,python,java
           - scenario: tail-sampling
             tier: enterprise
-            languages: nodejs,python
+            languages: nodejs,python,java
           - scenario: head-sampling-http
             tier: oss
             languages: nodejs

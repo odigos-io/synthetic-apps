@@ -10,19 +10,21 @@ spec:
   workloadCollectorConfig:
     - containerName: tail-sampling
       samplingCollectorConfig:
-        costReductionRules:
+        (costReductionRules[?name == 'cost-reduction-rest']):
           - name: cost-reduction-rest
             percentageAtMost: 10
-        highlyRelevantOperations:
+        (highlyRelevantOperations[?name == 'duration-above-500ms']):
           - durationAtLeastMs: 500
             name: duration-above-500ms
             percentageAtLeast: 50
+        (highlyRelevantOperations[?name == 'high-relevance-error']):
           - error: true
             name: high-relevance-error
             operation:
               httpServer:
                 routePrefix: /sampling/tail
             percentageAtLeast: 100
+        (highlyRelevantOperations[?name == 'high-relevance-duration-above-1000ms']):
           - durationAtLeastMs: 1000
             name: high-relevance-duration-above-1000ms
             percentageAtLeast: 100
@@ -39,13 +41,13 @@ spec:
   workloadCollectorConfig:
     - containerName: tail-sampling-errors
       samplingCollectorConfig:
-        costReductionRules:
+        (costReductionRules[?name == 'cost-reduction-ok-baseline']):
           - name: cost-reduction-ok-baseline
             operation:
               httpServer:
                 route: /ok
             percentageAtMost: 10
-        highlyRelevantOperations:
+        (highlyRelevantOperations[?name == 'high-relevance-error']):
           - error: true
             name: high-relevance-error
             percentageAtLeast: 100
@@ -62,13 +64,14 @@ spec:
   workloadCollectorConfig:
     - containerName: tail-sampling-duration
       samplingCollectorConfig:
-        costReductionRules:
+        (costReductionRules[?name == 'cost-reduction-rest']):
           - name: cost-reduction-rest
             percentageAtMost: 10
-        highlyRelevantOperations:
+        (highlyRelevantOperations[?name == 'duration-above-500ms']):
           - durationAtLeastMs: 500
             name: duration-above-500ms
             percentageAtLeast: 50
+        (highlyRelevantOperations[?name == 'high-relevance-duration-above-1000ms']):
           - durationAtLeastMs: 1000
             name: high-relevance-duration-above-1000ms
             percentageAtLeast: 100

@@ -19,8 +19,10 @@
 #     - description: GET /error
 #       kind: server
 #       spanAttributes: { http.route: /error, http.status_code: 500 }
+#       spanAttributesAny: { http.status_code: 500, http.response.status_code: 500 }  # OR
 #       spanAttributesAbsent: { odigos.sampling.category: "" }  # key must not exist on span
 #       spanAttributesContains: { http.target: "hops=3" }
+#       spanAttributesContainsAny: { http.target: "hops=3", url.query: "hops=3" }  # OR
 #       spanStatusError: true
 #       expected: { minimum: 1 }   # or count: N
 #
@@ -64,6 +66,52 @@ append_condition() {
     SPAN_MATCH_QUERY+=" && ${condition}"
   else
     SPAN_MATCH_QUERY="${condition}"
+  fi
+}
+
+append_or_conditions() {
+  local conditions=("$@")
+  local joined="" condition
+
+  if ((${#conditions[@]} == 0)); then
+    return
+  fi
+
+  if ((${#conditions[@]} == 1)); then
+    append_condition "${conditions[0]}"
+    return
+  fi
+
+  for condition in "${conditions[@]}"; do
+    if [[ -n "$joined" ]]; then
+      joined+=" || ${condition}"
+    else
+      joined="${condition}"
+    fi
+  done
+  append_condition "(${joined})"
+}
+
+append_span_attribute_any_from_yq_path() {
+  local file=$1
+  local yq_path=$2
+  local field=$3
+  local mode=$4
+  local key value conditions=()
+
+  while IFS=$'\t' read -r key value; do
+    [[ -z "$key" ]] && continue
+    if [[ "$mode" == "equals" ]]; then
+      conditions+=("$(jmes_map_key spanAttributes "$key") == $(jmes_format_value "$value")")
+    else
+      local attr_key
+      attr_key=$(jmes_map_key spanAttributes "$key")
+      conditions+=("(${attr_key} != null && contains(${attr_key}, $(jmes_format_value "$value")))")
+    fi
+  done < <(yq_read "$file" "$yq_path" "$field" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+
+  if ((${#conditions[@]} > 0)); then
+    append_or_conditions "${conditions[@]}"
   fi
 }
 
@@ -143,6 +191,9 @@ append_span_field_matchers_from_yq_path() {
     append_condition "contains($(jmes_map_key spanAttributes "$key"), $(jmes_format_value "$value"))"
   done < <(yq_read "$file" "$yq_path" "spanAttributesContains" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
 
+  append_span_attribute_any_from_yq_path "$file" "$yq_path" "spanAttributesAny" "equals"
+  append_span_attribute_any_from_yq_path "$file" "$yq_path" "spanAttributesContainsAny" "contains"
+
   while IFS=$'\t' read -r key _value; do
     [[ -z "$key" ]] && continue
     # Key must be missing from spanAttributes (not merely null/empty). Using keys()
@@ -216,6 +267,8 @@ span_has_match_fields() {
     ((.spanAttributes // {}) | length) > 0 or
     ((.spanAttributesEndsWith // {}) | length) > 0 or
     ((.spanAttributesContains // {}) | length) > 0 or
+    ((.spanAttributesAny // {}) | length) > 0 or
+    ((.spanAttributesContainsAny // {}) | length) > 0 or
     ((.spanAttributesAbsent // {}) | length) > 0
   )" "$file")
   [[ "$count" == "true" ]]

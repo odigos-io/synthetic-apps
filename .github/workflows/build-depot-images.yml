@@ -11,6 +11,7 @@ on:
       - 'nodejs/tail-sampling/**'
       - 'python/head-sampling/**'
       - 'python/tail-sampling/**'
+      - 'java/tail-sampling/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -79,3 +80,13 @@ jobs:
           file: python/tail-sampling/deployments/tail-sampling/Dockerfile
           context: python/tail-sampling
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:python-tail-sampling
+
+      - name: Build and push java-tail-sampling
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: java/tail-sampling/deployments/tail-sampling/Dockerfile
+          context: java/tail-sampling
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:java-tail-sampling
