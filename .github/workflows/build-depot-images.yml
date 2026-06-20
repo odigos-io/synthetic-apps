@@ -21,7 +21,10 @@ jobs:
     runs-on: depot-ubuntu-24.04-2
     steps:
       - uses: actions/checkout@v7
+      
       - uses: depot/setup-action@v1
+      - name: Login to Depot Registry
+        run: docker login --username x-token --password ${{ secrets.DEPOT_PUSH_TOKEN }} ${DEPOT_REGISTRY}
 
       - name: Build and push nodejs-head-sampling-http
         uses: depot/build-push-action@v1
