@@ -1,0 +1,58 @@
+name: Odigos Scenario E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      odigos_version:
+        description: 'Odigos version to install (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)'
+        required: true
+        type: string
+      scenario:
+        description: 'Scenario to test'
+        required: true
+        type: choice
+        options:
+          - tail-sampling
+          - head-sampling-http
+          - head-sampling-grpc
+          - url-templatization
+      languages:
+        description: 'Comma-separated languages (nodejs, python, java)'
+        required: true
+        type: string
+        default: nodejs
+
+jobs:
+  scenario-e2e:
+    runs-on: depot-ubuntu-24.04-2
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1.14.0
+        with:
+          config: tests/kind-config.yaml
+
+      - name: Install Odigos
+        run: |
+          chmod +x .github/scripts/install-odigos-helm.sh
+          .github/scripts/install-odigos-helm.sh "${{ inputs.odigos_version }}"
+
+      - name: Wait for Odigos to be ready
+        run: |
+          chmod +x .github/scripts/wait-for-odigos-ready.sh
+          .github/scripts/wait-for-odigos-ready.sh
+
+      - name: Install chainsaw
+        uses: kyverno/action-install-chainsaw@v0.2.15
+
+      - name: Run scenario E2E tests
+        run: |
+          chmod +x .github/scripts/run-scenario-e2e.sh
+          .github/scripts/run-scenario-e2e.sh "${{ inputs.scenario }}" "${{ inputs.languages }}"
