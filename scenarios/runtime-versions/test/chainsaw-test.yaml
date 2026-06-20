@@ -41,10 +41,12 @@ spec:
     - name: deploy test application
       try:
         - script:
-            timeout: 5m
+            timeout: 2m
             env:
               - name: LANGUAGE
                 value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
               - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
                 value: ($values.depot_pull_token)
               - name: OTEL_DISTRO_NAME
@@ -75,6 +77,20 @@ spec:
               else
                 make deploy OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
               fi
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              echo "=== deployments in ${TESTS_NAMESPACE} ==="
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o wide
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== pods in ${TESTS_NAMESPACE} ==="
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              kubectl get pods -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== recent events in ${TESTS_NAMESPACE} ==="
+              kubectl get events -n "$TESTS_NAMESPACE" --sort-by='.lastTimestamp' | tail -30
 
     - name: apply data streams to sources
       try:

@@ -77,7 +77,6 @@ jobs:
           - scenario: runtime-versions
             tier: oss
             language: python
-            otel_distro_name: 'python-community'
           # - scenario: runtime-versions
           #   tier: oss
           #   language: java
@@ -93,7 +92,6 @@ jobs:
           - scenario: runtime-versions
             tier: enterprise
             language: python
-            otel_distro_name: 'python-enterprise'
           # - scenario: runtime-versions
           #   tier: enterprise
           #   language: java
