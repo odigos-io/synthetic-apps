@@ -6,13 +6,13 @@ NAMESPACE="${ODIGOS_NAMESPACE:-odigos-system}"
 echo "Waiting for Odigos deployments in namespace ${NAMESPACE}..."
 kubectl wait --for=condition=available deployment --all \
   -n "${NAMESPACE}" \
-  --timeout=600s
+  --timeout=180s
 
 echo "Waiting for odigos-instrumentor pod..."
 kubectl wait --for=condition=ready pod \
   -l app.kubernetes.io/name=odigos-instrumentor \
   -n "${NAMESPACE}" \
-  --timeout=300s
+  --timeout=120s
 
 echo "Waiting for webhook service endpoints..."
 kubectl wait --for=jsonpath='{.subsets[*].addresses[0].ip}' \
