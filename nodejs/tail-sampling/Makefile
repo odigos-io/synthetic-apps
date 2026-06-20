@@ -2,13 +2,15 @@ NAMESPACE ?= nodejs-tail-sampling
 
 include ../../depot.mk
 
+IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:nodejs-tail-sampling
+
 .PHONY: build
 build:
-	docker build -f deployments/tail-sampling/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/nodejs-tail-sampling:tail-sampling .
+	docker build -f deployments/tail-sampling/Dockerfile -t $(IMAGE) .
 
 .PHONY: load-to-kind
 load-to-kind:
-	kind load docker-image ghcr.io/odigos-io/synthetic-apps/nodejs-tail-sampling:tail-sampling
+	kind load docker-image $(IMAGE)
 
 .PHONY: apply
 apply: ensure-namespace

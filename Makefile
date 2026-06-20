@@ -40,11 +40,9 @@ test-tail-sampling: check-chainsaw
 
 test-head-sampling-http: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
-	@if [ -n "$$DEPOT_SYNTHTIC_APPS_PULL_TOKEN" ]; then \
-		chainsaw test tests/head-sampling-http --set-string language=$(LANGUAGE) --set-string depot_pull_token=$$DEPOT_SYNTHTIC_APPS_PULL_TOKEN; \
-	else \
-		chainsaw test tests/head-sampling-http --set-string language=$(LANGUAGE); \
-	fi
+	chainsaw test tests/head-sampling-http \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
 test-url-templatization: check-chainsaw

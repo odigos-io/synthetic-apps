@@ -2,13 +2,15 @@ NAMESPACE ?= nodejs-grpc
 
 include ../../depot.mk
 
+IMAGE := $(DEPOT_REGISTRY)/synthetic-apps:nodejs-grpc
+
 .PHONY: build
 build:
-	docker build -f deployments/grpc/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/nodejs-grpc:grpc .
+	docker build -f deployments/grpc/Dockerfile -t $(IMAGE) .
 
 .PHONY: load-to-kind
 load-to-kind:
-	kind load docker-image ghcr.io/odigos-io/synthetic-apps/nodejs-grpc:grpc
+	kind load docker-image $(IMAGE)
 
 .PHONY: apply
 apply: ensure-namespace

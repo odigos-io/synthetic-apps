@@ -49,6 +49,8 @@ spec:
             env:
               - name: LANGUAGE
                 value: ($values.language)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
             content: |
               #!/bin/bash
               set -euo pipefail
@@ -67,8 +69,12 @@ spec:
               kubectl get namespace odigos-system >/dev/null
               echo "deploying head-sampling http app from ${app_dir}"
               cd "${app_dir}"
-              make apply
-              make rollout
+              if [ -n "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make apply
+                make rollout
+              else
+                make deploy
+              fi
 
     - name: apply data streams to sources
       try:
