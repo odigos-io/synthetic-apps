@@ -31,7 +31,7 @@ spec:
     - name: Enable sampling dry run
       try:
         - apply:
-            file: ./apply/odigos-sampling-dry-run-config.yaml
+            file: ./apply/odigos-config-overrides.yaml
 
     - name: Install Simple Trace Db
       try:

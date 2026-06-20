@@ -3,7 +3,7 @@ kind: SpanBatchTest
 description: |
   Spans exported after tail-sampling-duration-curls job
   (scenarios/tail-sampling/nodejs/deployments/duration/curl-job.yaml).
-  Sampling attrs recorded with dryRun enabled (see odigos-sampling-dry-run-config.yaml).
+  Sampling attrs recorded with dryRun enabled (see odigos-config-overrides.yaml).
   Rule names match deployments/duration/sampling.yaml / workload-collector-config assert.
   spanAttributesAny / spanAttributesContainsAny accept legacy (http.status_code, http.target)
   or stable semconv (http.response.status_code, url.query) attribute names.

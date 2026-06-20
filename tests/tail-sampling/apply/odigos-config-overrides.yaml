@@ -1,4 +1,4 @@
-# Enables tail-sampling dry run so decisions are recorded on spans but not enforced.
+# Odigos local UI config overrides for tail-sampling tests.
 # Matches odigos-local-ui-config in odigos-system (label odigos.io/config: local-ui).
 apiVersion: v1
 kind: ConfigMap
@@ -12,3 +12,5 @@ data:
     configVersion: 0
     sampling:
       dryRun: true
+      tailSampling:
+        traceAggregationWaitDuration: 2s
