@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'nodejs/head-sampling/**'
+      - 'nodejs/grpc/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -35,3 +36,13 @@ jobs:
           file: nodejs/head-sampling/deployments/head-sampling/Dockerfile
           context: nodejs/head-sampling
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-head-sampling-http
+
+      - name: Build and push nodejs-grpc
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: nodejs/grpc/deployments/grpc/Dockerfile
+          context: nodejs/grpc
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-grpc
