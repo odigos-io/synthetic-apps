@@ -94,7 +94,8 @@ spec:
               kubectl get namespace odigos-system >/dev/null
               echo "deploying head-sampling http app from ${app_dir}"
               cd "${app_dir}"
-              make deploy
+              make apply
+              make rollout
 
     - name: apply data streams to sources
       try:
