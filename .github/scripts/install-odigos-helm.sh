@@ -18,5 +18,6 @@ helm upgrade --install odigos odigos/odigos \
   --set collectorGateway.limitCPUm=100 \
   --set collectorGateway.requestMemoryMiB=32 \
   --set collectorGateway.limitMemoryMiB=256 \
+  --set ownTelemetry.metricsStore.disabled=false \
   --wait \
   --timeout 2m

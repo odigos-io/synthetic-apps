@@ -11,18 +11,19 @@ spec:
   bindings:
     - name: tests_namespace
       value: (join('-', [$values.language, 'tail-sampling']))
-    - name: trace_namespace
-      value: ($tests_namespace)
   steps:
-  
+
     - name: Create Tests Namespace
       try:
         - script:
+            workDir: ../../
             env:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
             content: |
-              kubectl create namespace "$TESTS_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
 
     - name: Enable sampling dry run
       try:
@@ -31,48 +32,20 @@ spec:
 
     - name: Install Simple Trace Db
       try:
-        - script:
-            timeout: 2m
-            env:
-              - name: TRACE_NAMESPACE
-                value: ($tests_namespace)
-            content: |
-              #!/bin/bash
-              set -euo pipefail
-              already_running=false
-              if kubectl get deployment simple-trace-db -n "$TRACE_NAMESPACE" >/dev/null 2>&1; then
-                already_running=true
-              fi
-              sed 's/($trace_namespace)/'"$TRACE_NAMESPACE"'/g' ../common/apply/simple-trace-db-deployment.yaml | kubectl apply -f -
-              if [[ "$already_running" == "true" ]]; then
-                kubectl rollout restart deployment/simple-trace-db -n "$TRACE_NAMESPACE"
-              fi
+        - apply:
+            file: ../common/apply/simple-trace-db-deployment.yaml
+            template: true
 
     - name: Add Destination
       try:
         - apply:
+            file: ./apply/simple-trace-db-destination.yaml
             template: true
-            resource:
-              apiVersion: odigos.io/v1alpha1
-              kind: Destination
-              metadata:
-                name: (join('-', ['simple-trace-db', $values.language, 'tail-sampling']))
-                namespace: odigos-system
-              spec:
-                data:
-                  OTLP_HTTP_ENDPOINT: (join('', ['http://simple-trace-db.', $trace_namespace, ':4318']))
-                destinationName: e2e-tests
-                signals:
-                  - TRACES
-                type: otlphttp
-                sourceSelector:
-                  dataStreams:
-                    - ($tests_namespace)
 
     - name: deploy test application
       try:
         - script:
-            timeout: 1m
+            timeout: 5m
             env:
               - name: LANGUAGE
                 value: ($values.language)
@@ -86,11 +59,16 @@ spec:
                 echo "unknown language: ${LANGUAGE} (expected ${app_dir})"
                 exit 1
               fi
+              if [ ! -d "${app_dir}/deployments/tail-sampling" ]; then
+                echo "language ${LANGUAGE} does not support tail-sampling (no deployments/tail-sampling)"
+                exit 1
+              fi
 
               kubectl get namespace odigos-system >/dev/null
               echo "deploying tail-sampling app from ${app_dir}"
               cd "${app_dir}"
-              make deploy
+              make apply
+              make rollout
 
     - name: apply data streams to sources
       try:
@@ -109,10 +87,10 @@ spec:
       catch:
         - script:
             env:
-              - name: LANGUAGE
-                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
             content: |
-              kubectl get instrumentationconfig -n "${LANGUAGE}-tail-sampling" -o yaml
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
               kubectl get sampling -n odigos-system -o yaml
 
     - name: wait for pods to be instrumented
@@ -120,18 +98,19 @@ spec:
         - script:
             timeout: 5m
             env:
-              - name: LANGUAGE
-                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
             content: |
-              export NAMESPACE="${LANGUAGE}-tail-sampling"
+              export NAMESPACE="$TESTS_NAMESPACE"
               ../common/assert/wait-for-pods-instrumented.sh
       catch:
         - script:
             env:
-              - name: LANGUAGE
-                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
             content: |
-              kubectl get pods -n "${LANGUAGE}-tail-sampling" -o yaml
+              kubectl get pods -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get sources,instrumentationconfig -n "$TESTS_NAMESPACE"
 
     - name: wait for simple trace db
       try:
@@ -139,7 +118,7 @@ spec:
             timeout: 2m
             env:
               - name: TRACE_NAMESPACE
-                value: ($tests_namespace)
+                value: ($namespace)
             content: |
               #!/bin/bash
               set -euo pipefail
@@ -159,7 +138,7 @@ spec:
     - name: trigger traffic
       try:
         - script:
-            timeout: 3m
+            timeout: 5m
             env:
               - name: LANGUAGE
                 value: ($values.language)
@@ -178,7 +157,7 @@ spec:
             timeout: 2m
             env:
               - name: TRACE_NAMESPACE
-                value: ($trace_namespace)
+                value: ($namespace)
             content: |
               #!/bin/bash
               set -euo pipefail
@@ -197,7 +176,7 @@ spec:
         - script:
             env:
               - name: TRACE_NAMESPACE
-                value: ($trace_namespace)
+                value: ($namespace)
             content: |
               ../common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans --verbose "$TRACE_NAMESPACE" simple-trace-db
 

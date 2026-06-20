@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: tail-sampling-duration
-          image: ghcr.io/odigos-io/synthetic-apps/nodejs-tail-sampling:tail-sampling
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-tail-sampling
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

@@ -32,7 +32,11 @@ LANGUAGE ?= nodejs
 
 test-tail-sampling: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs" && exit 1)
-	@echo "language: $(LANGUAGE)" | chainsaw test tests/tail-sampling --values -
+	@if [ -n "$$DEPOT_SYNTHTIC_APPS_PULL_TOKEN" ]; then \
+		chainsaw test tests/tail-sampling --set-string language=$(LANGUAGE) --set-string depot_pull_token=$$DEPOT_SYNTHTIC_APPS_PULL_TOKEN; \
+	else \
+		chainsaw test tests/tail-sampling --set-string language=$(LANGUAGE); \
+	fi
 
 test-head-sampling-http: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)

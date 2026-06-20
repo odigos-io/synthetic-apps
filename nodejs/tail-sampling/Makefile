@@ -1,3 +1,7 @@
+NAMESPACE ?= nodejs-tail-sampling
+
+include ../../depot.mk
+
 .PHONY: build
 build:
 	docker build -f deployments/tail-sampling/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/nodejs-tail-sampling:tail-sampling .
@@ -7,8 +11,7 @@ load-to-kind:
 	kind load docker-image ghcr.io/odigos-io/synthetic-apps/nodejs-tail-sampling:tail-sampling
 
 .PHONY: apply
-apply:
-	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
+apply: ensure-namespace
 	kubectl apply -n nodejs-tail-sampling -f deployments/errors/k8s.yaml
 	kubectl apply -n nodejs-tail-sampling -f deployments/errors/odigos-instrument.yaml
 	kubectl apply -n nodejs-tail-sampling -f deployments/duration/k8s.yaml
@@ -19,11 +22,19 @@ apply:
 	kubectl apply -n odigos-system -f deployments/duration/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/tail-sampling/sampling.yaml
 
+.PHONY: rollout
+rollout:
+	kubectl rollout restart deployment/tail-sampling deployment/tail-sampling-errors deployment/tail-sampling-duration -n nodejs-tail-sampling
+	kubectl rollout status deployment/tail-sampling -n nodejs-tail-sampling --timeout=120s
+	kubectl rollout status deployment/tail-sampling-errors -n nodejs-tail-sampling --timeout=120s
+	kubectl rollout status deployment/tail-sampling-duration -n nodejs-tail-sampling --timeout=120s
+
 .PHONY: deploy
 deploy:
 	make build
 	make load-to-kind
 	make apply
+	make rollout
 
 .PHONY: status
 status:
@@ -44,8 +55,7 @@ call-duration-endpoints:
 
 # Deletes any prior run and creates fresh Jobs that curl all deployment endpoints in-cluster.
 .PHONY: trigger
-trigger:
-	kubectl create namespace nodejs-tail-sampling --dry-run=client -o yaml | kubectl apply -f -
+trigger: ensure-namespace
 	$(MAKE) trigger-job JOB=tail-sampling-curls MANIFEST=deployments/tail-sampling/curl-job.yaml TIMEOUT=300s
 	$(MAKE) trigger-job JOB=tail-sampling-errors-curls MANIFEST=deployments/errors/curl-job.yaml TIMEOUT=180s
 	$(MAKE) trigger-job JOB=tail-sampling-duration-curls MANIFEST=deployments/duration/curl-job.yaml TIMEOUT=300s
