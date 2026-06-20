@@ -8,6 +8,7 @@ on:
     paths:
       - 'nodejs/head-sampling/**'
       - 'nodejs/grpc/**'
+      - 'nodejs/tail-sampling/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -46,3 +47,13 @@ jobs:
           file: nodejs/grpc/deployments/grpc/Dockerfile
           context: nodejs/grpc
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-grpc
+
+      - name: Build and push nodejs-tail-sampling
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: nodejs/tail-sampling/deployments/tail-sampling/Dockerfile
+          context: nodejs/tail-sampling
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-tail-sampling
