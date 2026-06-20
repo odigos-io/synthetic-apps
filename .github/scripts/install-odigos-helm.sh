@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:?Odigos version is required (e.g. v1.29.0 or 1.29.0)}"
+VERSION="${1:?Odigos version is required (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)}"
 VERSION="${VERSION#v}"
-
-if [[ -z "${ODIGOS_ONPREM_TOKEN:-}" ]]; then
-  echo "ODIGOS_ONPREM_TOKEN must be set" >&2
-  exit 1
-fi
 
 helm repo add odigos https://odigos-io.github.io/odigos/ 2>/dev/null || true
 helm repo update
