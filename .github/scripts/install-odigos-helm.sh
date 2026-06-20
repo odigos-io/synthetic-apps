@@ -12,8 +12,8 @@ helm upgrade --install odigos odigos/odigos \
   --version "${VERSION}" \
   --namespace odigos-system \
   --create-namespace \
-  --set collectorGateway.minReplicas=1 \
-  --set collectorGateway.maxReplicas=1 \
+  --set collectorGateway.minReplicas=2 \
+  --set collectorGateway.maxReplicas=2 \
   --set collectorGateway.requestCPUm=10 \
   --set collectorGateway.limitCPUm=100 \
   --set collectorGateway.requestMemoryMiB=32 \

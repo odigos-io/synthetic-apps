@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Chainsaw runs inline test scripts with /usr/bin/sh. On Ubuntu that is dash, which
+# does not support `set -o pipefail` used throughout our chainsaw test steps.
+if [[ "$(readlink -f /usr/bin/sh)" != "$(readlink -f /bin/bash)" ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    sudo ln -sf /bin/bash /usr/bin/sh
+  else
+    ln -sf /bin/bash /usr/bin/sh
+  fi
+fi
+
 SCENARIO="${1:?scenario is required}"
 LANGUAGES="${2:-nodejs}"
 
