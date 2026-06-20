@@ -1,0 +1,43 @@
+name: Odigos Scenario E2E (All)
+
+on:
+  workflow_dispatch:
+    inputs:
+      odigos_version:
+        description: 'Odigos version to install (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)'
+        required: true
+        type: string
+
+jobs:
+  scenario-e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: tail-sampling
+            tier: oss
+            languages: nodejs,python
+          - scenario: tail-sampling
+            tier: enterprise
+            languages: nodejs,python
+          - scenario: head-sampling-http
+            tier: oss
+            languages: nodejs
+          - scenario: head-sampling-http
+            tier: enterprise
+            languages: nodejs
+          - scenario: head-sampling-grpc
+            tier: oss
+            languages: nodejs
+          - scenario: head-sampling-grpc
+            tier: enterprise
+            languages: nodejs
+    uses: ./.github/workflows/odigos-scenario-e2e-reusable.yml
+    with:
+      odigos_version: ${{ inputs.odigos_version }}
+      scenario: ${{ matrix.scenario }}
+      languages: ${{ matrix.languages }}
+      tier: ${{ matrix.tier }}
+    secrets:
+      ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ secrets.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}
+      DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
