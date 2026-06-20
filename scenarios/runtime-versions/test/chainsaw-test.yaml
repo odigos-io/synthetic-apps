@@ -38,7 +38,7 @@ spec:
             file: ./apply/simple-trace-db-destination.yaml
             template: true
 
-    - name: deploy test application
+    - name: deploy test applications
       try:
         - script:
             timeout: 2m
