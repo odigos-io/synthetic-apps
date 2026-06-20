@@ -3,6 +3,8 @@ DEPOT_PULL_SECRET_NAME ?= regcred
 
 .PHONY: ensure-namespace setup-depot-registry-auth
 
+# Creates a namespace and sets up the image pull secret if DEPOT_SYNTHTIC_APPS_PULL_TOKEN is set.
+# Usage: make ensure-namespace NAMESPACE=foo DEPOT_SYNTHTIC_APPS_PULL_TOKEN=depot_reg_1234567890
 ensure-namespace:
 ifndef NAMESPACE
 	$(error NAMESPACE is required)

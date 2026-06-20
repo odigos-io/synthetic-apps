@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: head-sampling
-          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-tail-sampling
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-head-sampling-http
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

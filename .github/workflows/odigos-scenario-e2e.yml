@@ -89,5 +89,17 @@ jobs:
         env:
           DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
         run: |
-          chmod +x .github/scripts/run-scenario-e2e.sh
-          .github/scripts/run-scenario-e2e.sh "${{ inputs.scenario }}" "${{ inputs.languages }}"
+          sudo ln -sf /bin/bash /usr/bin/sh
+          test_dir="tests/${{ inputs.scenario }}"
+          if [[ "${{ inputs.scenario }}" == "head-sampling-grpc" || "${{ inputs.scenario }}" == "url-templatization" ]]; then
+            chainsaw test "${test_dir}"
+          else
+            IFS=',' read -ra langs <<< "${{ inputs.languages }}"
+            for lang in "${langs[@]}"; do
+              lang="$(echo "${lang}" | xargs)"
+              [[ -z "${lang}" ]] && continue
+              chainsaw test "${test_dir}" \
+                --set-string "language=${lang}" \
+                --set-string "depot_pull_token=${DEPOT_SYNTHTIC_APPS_PULL_TOKEN}"
+            done
+          fi

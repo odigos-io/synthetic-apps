@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: simple-trace-db
-  namespace: ($trace_namespace)
+  namespace: ($namespace)
   labels:
     app: simple-trace-db
 spec:
@@ -26,7 +26,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: simple-trace-db
-  namespace: ($trace_namespace)
+  namespace: ($namespace)
 spec:
   selector:
     app: simple-trace-db
