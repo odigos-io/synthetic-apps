@@ -9,6 +9,7 @@ on:
       - 'nodejs/head-sampling/**'
       - 'nodejs/grpc/**'
       - 'nodejs/tail-sampling/**'
+      - 'python/head-sampling/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -37,6 +38,16 @@ jobs:
           file: nodejs/head-sampling/deployments/head-sampling/Dockerfile
           context: nodejs/head-sampling
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-head-sampling-http
+
+      - name: Build and push python-head-sampling-http
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: python/head-sampling/deployments/head-sampling/Dockerfile
+          context: python/head-sampling
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:python-head-sampling-http
 
       - name: Build and push nodejs-grpc
         uses: depot/build-push-action@v1

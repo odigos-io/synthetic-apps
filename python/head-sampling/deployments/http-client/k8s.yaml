@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: head-sampling-http-client
-          image: ghcr.io/odigos-io/synthetic-apps/python-head-sampling:head-sampling
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:python-head-sampling-http
           imagePullPolicy: IfNotPresent
           env:
             - name: HTTP_MATCH_ENABLE_ROUTES
