@@ -1,0 +1,71 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: python-runtime-versions
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionlatest
+      agentEnabled: True
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: python-runtime-versions
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionminimum
+      agentEnabled: True
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimumlegacy
+  namespace: python-runtime-versions
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionminimumlegacy
+      agentEnabled: True
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionunsupported
+  namespace: python-runtime-versions
+spec:
+  agentInjectionEnabled: False
+  containers:
+    - containerName: versionunsupported
+      agentEnabled: False
+      agentEnabledReason: "UnsupportedRuntimeVersion"
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'False'
+      reason: "UnsupportedRuntimeVersion"
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionveryold
+  namespace: python-runtime-versions
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionveryold
+      agentEnabled: True
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'

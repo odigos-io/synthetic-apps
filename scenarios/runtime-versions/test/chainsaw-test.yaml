@@ -1,0 +1,204 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: runtime-versions
+spec:
+  description: |
+    E2E tests for Odigos runtime version detection and agent enablement across httpserver variants.
+    Prerequisites: a kind cluster with Odigos already installed at the version under test.
+    Configure the language under test via --values (e.g. make test-runtime-versions LANGUAGE=nodejs).
+    Optionally set otel_distro_name (e.g. make test-runtime-versions LANGUAGE=java OTEL_DISTRO_NAME=java-enterprise).
+  skipDelete: true
+  bindings:
+    - name: tests_namespace
+      value: (join('-', [$values.language, 'runtime-versions']))
+  steps:
+
+    - name: Create Tests Namespace
+      try:
+        - script:
+            workDir: ../../../
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
+
+    - name: Install Simple Trace Db
+      try:
+        - apply:
+            file: ../../../tests/common/apply/simple-trace-db-deployment.yaml
+            template: true
+
+    - name: Add Destination
+      try:
+        - apply:
+            file: ./apply/simple-trace-db-destination.yaml
+            template: true
+
+    - name: deploy test application
+      try:
+        - script:
+            timeout: 5m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+              - name: OTEL_DISTRO_NAME
+                value: ($values.otel_distro_name)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
+              if [ ! -d "${app_dir}" ]; then
+                echo "unknown language: ${LANGUAGE} (expected ${app_dir})"
+                exit 1
+              fi
+              if [ ! -d "${app_dir}/deployments/versionlatest" ]; then
+                echo "language ${LANGUAGE} does not support runtime-versions (no deployments/versionlatest)"
+                exit 1
+              fi
+
+              kubectl get namespace odigos-system >/dev/null
+              echo "deploying runtime-versions app from ${app_dir}"
+              if [ -n "${OTEL_DISTRO_NAME:-}" ]; then
+                echo "using otel distro override: ${OTEL_DISTRO_NAME}"
+              fi
+              cd "${app_dir}"
+              if [ -n "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make apply OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
+                make rollout
+              else
+                make deploy OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
+              fi
+
+    - name: apply data streams to sources
+      try:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              ../../../tests/common/apply/apply-data-stream-to-sources.sh
+
+    - name: Assert Instrumentation Configs Created
+      try:
+        - assert:
+            timeout: 2m
+            file: (join('', ['./assert/ic-created-', $values.language, '.yaml']))
+
+    - name: Assert Runtime Detection
+      try:
+        - assert:
+            timeout: 2m
+            file: (join('', ['./assert/runtimes-detected-', $values.language, '.yaml']))
+
+    - name: Assert Agent Enabled
+      try:
+        - assert:
+            timeout: 2m
+            file: (join('', ['./assert/agent-enabled-', $values.language, '.yaml']))
+
+    - name: Assert Agent Injected
+      try:
+        - assert:
+            timeout: 2m
+            file: (join('', ['./assert/agent-injected-', $values.language, '.yaml']))
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get pods -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+
+    - name: wait for simple trace db
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: TRACE_NAMESPACE
+                value: ($namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              kubectl wait --for=condition=available deployment/simple-trace-db -n "$TRACE_NAMESPACE" --timeout=120s
+
+    - name: generate traffic
+      try:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              kubectl delete job generate-traffic -n "$TESTS_NAMESPACE" --ignore-not-found=true
+              kubectl apply -f "./apply/generate-traffic-${LANGUAGE}.yaml"
+        - script:
+            timeout: 2m
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              kubectl wait --for=condition=complete job/generate-traffic -n "$TESTS_NAMESPACE" --timeout=120s || \
+                (kubectl logs job/generate-traffic -n "$TESTS_NAMESPACE" --tail=200; exit 1)
+              kubectl delete job generate-traffic -n "$TESTS_NAMESPACE" --ignore-not-found=true
+
+    - name: Wait for Traces
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TRACE_NAMESPACE
+                value: ($namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              query_file="./queries/wait-for-trace-${LANGUAGE}.yaml"
+              if [ ! -f "${query_file}" ]; then
+                echo "missing trace query file: ${query_file}" >&2
+                exit 1
+              fi
+              query_kind=$(yq e '.kind // "TraceTest"' "${query_file}")
+              if [[ "${query_kind}" == "SpanBatchTest" || "${query_kind}" == "SpanTest" ]]; then
+                query_runner=(../../../tests/common/assert/simple_trace_db_span_query_runner.sh "${query_file}" "$TRACE_NAMESPACE" simple-trace-db)
+              else
+                query_runner=(../../../tests/common/assert/simple_trace_db_query_runner.sh "${query_file}" "" "$TRACE_NAMESPACE" simple-trace-db)
+              fi
+              deadline=$(($(date +%s) + 120))
+              while true; do
+                if "${query_runner[@]}"; then
+                  exit 0
+                fi
+                if [[ $(date +%s) -ge deadline ]]; then
+                  echo "trace assertions did not pass within 2m" >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+      catch:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TRACE_NAMESPACE
+                value: ($namespace)
+            content: |
+              query_file="./queries/wait-for-trace-${LANGUAGE}.yaml"
+              query_kind=$(yq e '.kind // "TraceTest"' "${query_file}")
+              if [[ "${query_kind}" == "SpanBatchTest" || "${query_kind}" == "SpanTest" ]]; then
+                ../../../tests/common/assert/simple_trace_db_span_query_runner.sh "${query_file}" --verbose "$TRACE_NAMESPACE" simple-trace-db
+              else
+                ../../../tests/common/assert/simple_trace_db_query_runner.sh "${query_file}" --verbose "$TRACE_NAMESPACE" simple-trace-db
+              fi

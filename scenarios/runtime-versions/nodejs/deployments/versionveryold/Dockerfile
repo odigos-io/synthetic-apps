@@ -1,7 +1,9 @@
-FROM node:current-alpine
+FROM node:8.17.0-alpine
 WORKDIR /app
 COPY ./package.json /app
 COPY ./yarn.lock /app
-RUN npm install -g yarn && yarn install
+RUN yarn install
 COPY ./src /app
+ENV NODE_VERSION=""
 CMD ["node", "index.js"]
+

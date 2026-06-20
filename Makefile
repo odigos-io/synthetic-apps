@@ -1,6 +1,6 @@
 include depot.mk
 
-.PHONY: check-chainsaw test-runtime-version test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http
+.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http
 
 check-chainsaw:
 	@command -v chainsaw >/dev/null 2>&1 || { \
@@ -29,6 +29,7 @@ test-runtime-version: check-chainsaw
 # Usage: make test-tail-sampling LANGUAGE=java OTEL_DISTRO_NAME=opentelemetry-ebpf-instrumentation
 # Usage: make test-head-sampling-http LANGUAGE=nodejs
 # Usage: make test-head-sampling-grpc LANGUAGE=nodejs
+# Usage: make test-runtime-versions LANGUAGE=nodejs|python|java|golang
 LANGUAGE ?= nodejs
 OTEL_DISTRO_NAME ?=
 
@@ -42,6 +43,13 @@ test-tail-sampling: check-chainsaw
 test-head-sampling-http: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs python java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java" && exit 1)
 	chainsaw test scenarios/head-sampling-http/test \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
+
+test-runtime-versions: check-chainsaw
+	@test "$(filter $(LANGUAGE),nodejs python java golang)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs python java golang" && exit 1)
+	chainsaw test scenarios/runtime-versions/test \
 		--set-string language=$(LANGUAGE) \
 		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
 		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)

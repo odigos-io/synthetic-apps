@@ -154,11 +154,14 @@ append_resource_matchers_from_yq_path() {
 append_span_field_matchers_from_yq_path() {
   local file=$1
   local yq_path=$2
+  local skip_service_name=${3:-false}
 
   local service_name span_name kind span_status_error key value
-  service_name=$(yq_read "$file" "$yq_path" "serviceName" ' // ""')
-  if [[ -n "$service_name" && "$service_name" != "null" ]]; then
-    append_condition "serviceName == $(jmes_format_value "$service_name")"
+  if [[ "$skip_service_name" != "true" ]]; then
+    service_name=$(yq_read "$file" "$yq_path" "serviceName" ' // ""')
+    if [[ -n "$service_name" && "$service_name" != "null" ]]; then
+      append_condition "serviceName == $(jmes_format_value "$service_name")"
+    fi
   fi
 
   span_name=$(yq_read "$file" "$yq_path" "name" ' // ""')
@@ -227,16 +230,20 @@ build_query_for_batch_span() {
 
   SPAN_MATCH_QUERY=""
 
-  local service_name
-  service_name=$(yq e '.serviceName // ""' "$file")
-  if [[ -z "$service_name" || "$service_name" == "null" ]]; then
-    echo "SpanBatchTest requires serviceName: $file" >&2
+  local span_service_name batch_service_name
+  span_service_name=$(yq_read "$file" "$span_path" "serviceName" ' // ""')
+  batch_service_name=$(yq e '.serviceName // ""' "$file")
+  if [[ -n "$span_service_name" && "$span_service_name" != "null" ]]; then
+    append_condition "serviceName == $(jmes_format_value "$span_service_name")"
+  elif [[ -n "$batch_service_name" && "$batch_service_name" != "null" ]]; then
+    append_condition "serviceName == $(jmes_format_value "$batch_service_name")"
+  else
+    echo "SpanBatchTest requires serviceName at batch or span level: $file" >&2
     exit 1
   fi
-  append_condition "serviceName == $(jmes_format_value "$service_name")"
 
   append_resource_matchers_from_yq_path "$file" "."
-  append_span_field_matchers_from_yq_path "$file" "$span_path"
+  append_span_field_matchers_from_yq_path "$file" "$span_path" "true"
 
   if [[ -z "$SPAN_MATCH_QUERY" ]]; then
     echo "SpanBatchTest span[${span_index}] must define span fields or query: $file" >&2

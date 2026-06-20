@@ -15,9 +15,10 @@ on:
           - tail-sampling
           - head-sampling-http
           - head-sampling-grpc
+          - runtime-versions
           - url-templatization
       languages:
-        description: 'Comma-separated languages (nodejs, python, java)'
+        description: 'Comma-separated languages (nodejs, python, java, golang)'
         required: true
         type: string
         default: nodejs

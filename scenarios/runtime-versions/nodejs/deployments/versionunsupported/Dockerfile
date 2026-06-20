@@ -1,7 +1,8 @@
-FROM node:current-alpine
+FROM node:12.13.0-alpine
 WORKDIR /app
 COPY ./package.json /app
 COPY ./yarn.lock /app
-RUN npm install -g yarn && yarn install
+RUN yarn install
 COPY ./src /app
 CMD ["node", "index.js"]
+

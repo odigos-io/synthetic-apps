@@ -1,0 +1,34 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Spans from supported Python runtime versions in python-runtime-versions
+  after generate-traffic job (scenarios/runtime-versions/test/apply/generate-traffic-python.yaml).
+serviceName: versionlatest
+resourceAttributes:
+  k8s.namespace.name: python-runtime-versions
+spans:
+  - id: versionlatest
+    description: GET /static/success on versionlatest deployment (supported runtime)
+    kind: server
+    spanAttributes:
+      http.route: /static/success
+    expected:
+      minimum: 1
+
+  - id: versionminimum
+    description: GET /static/success on versionminimum deployment (supported runtime)
+    serviceName: versionminimum
+    kind: server
+    spanAttributes:
+      http.route: /static/success
+    expected:
+      minimum: 1
+
+  - id: versionminimumlegacy
+    description: GET /static/success on versionminimumlegacy deployment (legacy agent, Python 3.8)
+    serviceName: versionminimumlegacy
+    kind: server
+    spanAttributes:
+      http.route: /static/success
+    expected:
+      minimum: 1

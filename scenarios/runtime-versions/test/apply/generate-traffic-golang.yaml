@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: generate-traffic
+  namespace: golang-runtime-versions
+spec:
+  template:
+    metadata:
+      labels:
+        app: generate-traffic
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: generate-traffic
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              set -e
+              curl -s --fail http://versionlatest:8080/static/success
+              curl -s --fail http://versionminimum:8080/static/success
+              curl -s --fail http://versionunsupported:8080/static/success
+              curl -s --fail http://versionveryold:8080/static/success

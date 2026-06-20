@@ -1,0 +1,12 @@
+namespace: python-runtime-versions
+sources:
+  - name: instrument-versionlatest
+    workload: versionlatest
+  - name: instrument-versionminimum
+    workload: versionminimum
+  - name: instrument-versionminimumlegacy
+    workload: versionminimumlegacy
+  - name: instrument-versionunsupported
+    workload: versionunsupported
+  - name: instrument-versionveryold
+    workload: versionveryold

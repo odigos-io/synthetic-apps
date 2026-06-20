@@ -1,0 +1,74 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: python-runtime-versions
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: versionlatest
+status:
+  (conditions[?type == 'MarkedForInstrumentation']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: python-runtime-versions
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: versionminimum
+status:
+  (conditions[?type == 'MarkedForInstrumentation']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimumlegacy
+  namespace: python-runtime-versions
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: versionminimumlegacy
+status:
+  (conditions[?type == 'MarkedForInstrumentation']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionunsupported
+  namespace: python-runtime-versions
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: versionunsupported
+status:
+  (conditions[?type == 'MarkedForInstrumentation']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionveryold
+  namespace: python-runtime-versions
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: versionveryold
+status:
+  (conditions[?type == 'MarkedForInstrumentation']):
+    - status: 'True'

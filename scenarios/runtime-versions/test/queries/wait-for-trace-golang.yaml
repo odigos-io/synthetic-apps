@@ -1,0 +1,8 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: TraceTest
+description: Wait for traces from supported runtime versions in golang-runtime-versions
+query: |
+  length([?span.serviceName == 'versionlatest' && span.resourceAttributes."k8s.namespace.name" == 'golang-runtime-versions' && span.spanAttributes."url.path" == '/static/success']) > `0` ||
+  length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'golang-runtime-versions' && span.spanAttributes."url.path" == '/static/success']) > `0`
+expected:
+  count: 2

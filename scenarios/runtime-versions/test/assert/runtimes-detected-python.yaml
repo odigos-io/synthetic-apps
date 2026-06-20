@@ -1,0 +1,64 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionlatest
+  namespace: python-runtime-versions
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionlatest
+      language: python
+      (runtimeVersion != null): true
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimum
+  namespace: python-runtime-versions
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionminimum
+      language: python
+      runtimeVersion: 3.9.0
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimumlegacy
+  namespace: python-runtime-versions
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionminimumlegacy
+      language: python
+      runtimeVersion: 3.8.0
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionunsupported
+  namespace: python-runtime-versions
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionunsupported
+      language: python
+      runtimeVersion: 3.7.17
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionveryold
+  namespace: python-runtime-versions
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionveryold
+      language: python
+      (runtimeVersion == null): true

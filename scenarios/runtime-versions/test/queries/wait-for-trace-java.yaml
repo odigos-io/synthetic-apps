@@ -1,0 +1,8 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: TraceTest
+description: Wait for traces from supported runtime versions in java-runtime-versions
+query: |
+  length([?span.serviceName == 'versionlatest' && span.resourceAttributes."k8s.namespace.name" == 'java-runtime-versions' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
+  length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'java-runtime-versions' && span.spanAttributes."http.route" == '/static/success']) > `0`
+expected:
+  count: 2

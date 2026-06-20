@@ -68,6 +68,40 @@ jobs:
             tier: enterprise
             language: nodejs
             otel_distro_name: 'nodejs-enterprise'
+
+          #### Runtime Versions ####
+          # - scenario: runtime-versions
+          #   tier: oss
+          #   language: nodejs
+          #   otel_distro_name: 'nodejs-community'
+          - scenario: runtime-versions
+            tier: oss
+            language: python
+            otel_distro_name: 'python-community'
+          # - scenario: runtime-versions
+          #   tier: oss
+          #   language: java
+          #   otel_distro_name: 'java-community'
+          # - scenario: runtime-versions
+          #   tier: oss
+          #   language: golang
+          #   otel_distro_name: 'golang-community'
+          # - scenario: runtime-versions
+          #   tier: enterprise
+          #   language: nodejs
+          #   otel_distro_name: 'nodejs-enterprise'
+          - scenario: runtime-versions
+            tier: enterprise
+            language: python
+            otel_distro_name: 'python-enterprise'
+          # - scenario: runtime-versions
+          #   tier: enterprise
+          #   language: java
+          #   otel_distro_name: 'java-enterprise'
+          # - scenario: runtime-versions
+          #   tier: enterprise
+          #   language: golang
+          #   otel_distro_name: 'golang-enterprise'
     steps:
       - uses: actions/checkout@v7
 
