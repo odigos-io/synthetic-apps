@@ -48,7 +48,31 @@ jobs:
       - name: Wait for Odigos to be ready
         run: |
           chmod +x .github/scripts/wait-for-odigos-ready.sh
-          .github/scripts/wait-for-odigos-ready.sh
+
+          dump_odigos_debug() {
+            echo "::group::Odigos debug info"
+            echo "=== Helm release ==="
+            helm status odigos -n odigos-system || true
+            helm get manifest odigos -n odigos-system | head -200 || true
+            echo "=== Workloads ==="
+            kubectl get pods,deployments,daemonsets,svc,endpoints -n odigos-system -o wide || true
+            echo "=== Instrumentor ==="
+            kubectl get pods,svc,endpoints -n odigos-system -l app.kubernetes.io/name=odigos-instrumentor -o wide || true
+            kubectl describe pods -n odigos-system -l app.kubernetes.io/name=odigos-instrumentor || true
+            echo "=== Not-ready pods ==="
+            kubectl get pods -n odigos-system --field-selector=status.phase!=Running -o wide || true
+            kubectl describe pods -n odigos-system --field-selector=status.phase!=Running || true
+            echo "=== Recent events ==="
+            kubectl get events -n odigos-system --sort-by='.lastTimestamp' | tail -50 || true
+            echo "=== Source CRD ==="
+            kubectl get crd sources.odigos.io -o yaml 2>/dev/null || echo "sources.odigos.io CRD not found"
+            echo "::endgroup::"
+          }
+
+          if ! .github/scripts/wait-for-odigos-ready.sh; then
+            dump_odigos_debug
+            exit 1
+          fi
 
       - name: Install chainsaw
         uses: kyverno/action-install-chainsaw@v0.2.15
