@@ -7,10 +7,16 @@ VERSION="${VERSION#v}"
 helm repo add odigos https://odigos-io.github.io/odigos/ 2>/dev/null || true
 helm repo update
 
-echo "Installing Odigos chart version ${VERSION}..."
+echo "Installing Odigos chart version ${VERSION} (kind-friendly gateway sizing)..."
 helm upgrade --install odigos odigos/odigos \
   --version "${VERSION}" \
   --namespace odigos-system \
   --create-namespace \
+  --set collectorGateway.minReplicas=1 \
+  --set collectorGateway.maxReplicas=1 \
+  --set collectorGateway.requestCPUm=10 \
+  --set collectorGateway.limitCPUm=100 \
+  --set collectorGateway.requestMemoryMiB=32 \
+  --set collectorGateway.limitMemoryMiB=256 \
   --wait \
   --timeout 2m
