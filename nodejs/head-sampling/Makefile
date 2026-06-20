@@ -1,3 +1,7 @@
+NAMESPACE ?= nodejs-head-sampling
+
+include ../../depot.mk
+
 .PHONY: build
 build:
 	docker build -f deployments/head-sampling/Dockerfile -t ghcr.io/odigos-io/synthetic-apps/nodejs-head-sampling:head-sampling .
@@ -7,8 +11,7 @@ load-to-kind:
 	kind load docker-image ghcr.io/odigos-io/synthetic-apps/nodejs-head-sampling:head-sampling
 
 .PHONY: apply
-apply:
-	kubectl create namespace nodejs-head-sampling --dry-run=client -o yaml | kubectl apply -f -
+apply: ensure-namespace
 	kubectl apply -n nodejs-head-sampling -f deployments/head-sampling/k8s.yaml
 	kubectl apply -n nodejs-head-sampling -f deployments/head-sampling/odigos-instrument.yaml
 	kubectl apply -n nodejs-head-sampling -f deployments/http-server/k8s.yaml
@@ -51,8 +54,7 @@ call-http-server-endpoints:
 
 # Deletes any prior run and creates a fresh Job that curls http-server endpoints in-cluster.
 .PHONY: trigger-http-server-curls
-trigger-http-server-curls:
-	kubectl create namespace nodejs-head-sampling --dry-run=client -o yaml | kubectl apply -f -
+trigger-http-server-curls: ensure-namespace
 	kubectl delete job head-sampling-http-server-curls -n nodejs-head-sampling --ignore-not-found=true
 	kubectl apply -n nodejs-head-sampling -f deployments/http-server/curl-job.yaml
 	kubectl wait --for=condition=complete job/head-sampling-http-server-curls -n nodejs-head-sampling --timeout=180s || \

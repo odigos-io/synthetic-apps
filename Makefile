@@ -1,5 +1,7 @@
 CHAINSAW_VERSION ?= v0.2.12
 
+include depot.mk
+
 UNAME_S := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_M),x86_64)

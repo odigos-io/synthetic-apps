@@ -44,8 +44,6 @@ jobs:
           install_only: true
 
       - name: Create Kind cluster
-        env:
-          DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
         run: |
           chmod +x .github/scripts/create-kind-cluster.sh
           .github/scripts/create-kind-cluster.sh
@@ -88,6 +86,8 @@ jobs:
         uses: kyverno/action-install-chainsaw@v0.2.15
 
       - name: Run scenario E2E tests
+        env:
+          DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ secrets.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
         run: |
           chmod +x .github/scripts/run-scenario-e2e.sh
           .github/scripts/run-scenario-e2e.sh "${{ inputs.scenario }}" "${{ inputs.languages }}"
