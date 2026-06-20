@@ -1,0 +1,108 @@
+name: Odigos Scenario E2E
+description: Set up kind, install Odigos, and run a scenario E2E test
+
+inputs:
+  odigos_version:
+    description: 'Odigos version to install (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)'
+    required: true
+  scenario:
+    description: 'Scenario to test'
+    required: true
+  languages:
+    description: 'Comma-separated languages (nodejs, python, java)'
+    required: true
+  tier:
+    description: 'Odigos tier to install (enterprise or oss)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v5
+
+    - name: Install kind
+      uses: helm/kind-action@v1.14.0
+      with:
+        version: "v0.25.0"
+        install_only: true
+
+    - name: Create Kind cluster
+      shell: bash
+      run: |
+        chmod +x .github/scripts/create-kind-cluster.sh
+        .github/scripts/create-kind-cluster.sh
+
+    - name: Install Odigos
+      shell: bash
+      env:
+        ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ env.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}
+      run: |
+        if [[ "${{ inputs.tier }}" == "enterprise" ]]; then
+          export ODIGOS_ONPREM_TOKEN="$ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI"
+        fi
+        chmod +x .github/scripts/install-odigos-helm.sh
+        .github/scripts/install-odigos-helm.sh "${{ inputs.odigos_version }}" "${{ inputs.tier }}"
+
+    - name: Wait for Odigos to be ready
+      shell: bash
+      run: |
+        chmod +x .github/scripts/wait-for-odigos-ready.sh
+
+        dump_odigos_debug() {
+          echo "::group::Odigos debug info"
+          echo "=== Helm release ==="
+          helm status odigos -n odigos-system || true
+          helm get manifest odigos -n odigos-system | head -200 || true
+          echo "=== Workloads ==="
+          kubectl get pods,deployments,daemonsets,svc,endpoints -n odigos-system -o wide || true
+          echo "=== Instrumentor ==="
+          kubectl get pods,svc,endpoints -n odigos-system -l app.kubernetes.io/name=odigos-instrumentor -o wide || true
+          kubectl describe pods -n odigos-system -l app.kubernetes.io/name=odigos-instrumentor || true
+          echo "=== Not-ready pods ==="
+          kubectl get pods -n odigos-system --field-selector=status.phase!=Running -o wide || true
+          kubectl describe pods -n odigos-system --field-selector=status.phase!=Running || true
+          echo "=== Recent events ==="
+          kubectl get events -n odigos-system --sort-by='.lastTimestamp' | tail -50 || true
+          echo "=== Source CRD ==="
+          kubectl get crd sources.odigos.io -o yaml 2>/dev/null || echo "sources.odigos.io CRD not found"
+          echo "::endgroup::"
+        }
+
+        if ! .github/scripts/wait-for-odigos-ready.sh; then
+          dump_odigos_debug
+          exit 1
+        fi
+
+    - name: Install chainsaw
+      uses: kyverno/action-install-chainsaw@v0.2.15
+
+    - name: Run scenario E2E tests
+      shell: bash
+      env:
+        DEPOT_SYNTHTIC_APPS_PULL_TOKEN: ${{ env.DEPOT_SYNTHTIC_APPS_PULL_TOKEN }}
+      run: |
+        sudo ln -sf /bin/bash /usr/bin/sh
+        test_dir="tests/${{ inputs.scenario }}"
+        if [[ "${{ inputs.scenario }}" == "url-templatization" ]]; then
+          chainsaw test "${test_dir}"
+        else
+          IFS=',' read -ra langs <<< "${{ inputs.languages }}"
+          pids=()
+          for lang in "${langs[@]}"; do
+            lang="$(echo "${lang}" | xargs)"
+            [[ -z "${lang}" ]] && continue
+            chainsaw test "${test_dir}" \
+              --set-string "language=${lang}" \
+              --set-string "depot_pull_token=${DEPOT_SYNTHTIC_APPS_PULL_TOKEN}" &
+            pids+=($!)
+          done
+          fail=0
+          for pid in "${pids[@]}"; do
+            wait "${pid}" || fail=1
+          done
+          exit "${fail}"
+        fi
