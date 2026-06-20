@@ -29,6 +29,8 @@ rollout:
 
 .PHONY: deploy
 deploy:
+	echo "error here to test that it's not called from CI"
+	exit 1
 	$(MAKE) build
 	$(MAKE) load-to-kind
 	$(MAKE) apply
