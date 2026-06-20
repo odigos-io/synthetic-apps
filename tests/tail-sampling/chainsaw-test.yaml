@@ -11,6 +11,8 @@ spec:
   bindings:
     - name: tests_namespace
       value: (join('-', [$values.language, 'tail-sampling']))
+    - name: metrics_baseline_file
+      value: (join('', ['./.trace-sampling-metrics-baseline-', $values.language, '.json']))
   steps:
 
     - name: Create Tests Namespace
@@ -142,7 +144,7 @@ spec:
               set -euo pipefail
               ../common/assert/victoriametrics_sampling_metrics_runner.sh record-baseline \
                 ./queries/metrics/trace-sampling-metrics.yaml \
-                ./.trace-sampling-metrics-baseline.json
+                ($metrics_baseline_file)
 
     - name: trigger traffic
       try:
@@ -203,7 +205,7 @@ spec:
               while true; do
                 if ../common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
                   ./queries/metrics/trace-sampling-metrics.yaml \
-                  ./.trace-sampling-metrics-baseline.json; then
+                  ($metrics_baseline_file); then
                   exit 0
                 fi
                 if [[ $(date +%s) -ge deadline ]]; then
@@ -222,7 +224,7 @@ spec:
               set -euo pipefail
               ../common/assert/victoriametrics_sampling_metrics_runner.sh assert-delta \
                 ./queries/metrics/trace-sampling-metrics.yaml \
-                ./.trace-sampling-metrics-baseline.json || true
+                ($metrics_baseline_file) || true
               echo "--- current totals by rule name (match / keep / drop) ---"
               base="http://odigos-victoriametrics.odigos-system.svc.cluster.local:8428"
               for deployment in tail-sampling-errors tail-sampling-duration; do
