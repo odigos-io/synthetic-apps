@@ -38,6 +38,8 @@ jobs:
     runs-on: depot-ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v7
+
       - uses: ./.github/actions/odigos-scenario-e2e
         with:
           odigos_version: ${{ inputs.odigos_version }}

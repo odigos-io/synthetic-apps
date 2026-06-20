@@ -38,6 +38,8 @@ jobs:
             tier: enterprise
             languages: nodejs
     steps:
+      - uses: actions/checkout@v7
+
       - uses: ./.github/actions/odigos-scenario-e2e
         with:
           odigos_version: ${{ inputs.odigos_version }}
