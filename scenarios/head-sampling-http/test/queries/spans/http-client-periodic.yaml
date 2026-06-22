@@ -4,7 +4,7 @@ description: |
   Outbound HTTP client spans from head-sampling-http-client periodic loop
   (scenarios/head-sampling-http/<language>/deployments/http-client/k8s.yaml, HTTP_MATCH_OUTBOUND_INTERVAL_MS=10000).
   spanAttributesAny / spanAttributesContainsAny accept legacy (http.status_code, http.url) or stable
-  semconv (http.response.status_code, url.path) attribute names.
+  semconv (http.response.status_code, url.path, url.full) attribute names.
   Counts are timing-dependent; assert minimum coverage and sampling attrs per outbound path.
 serviceName: head-sampling-http-client
 resourceAttributesEndsWith:
@@ -35,6 +35,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/exact/target
       http.url: /http-match/exact/target
+      url.full: /http-match/exact/target
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1
@@ -52,6 +53,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/exact/post-target
       http.url: /http-match/exact/post-target
+      url.full: /http-match/exact/post-target
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1
@@ -69,6 +71,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/prefix/segment
       http.url: /http-match/prefix/segment
+      url.full: /http-match/prefix/segment
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1
@@ -86,6 +89,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/prefix/segment/nested
       http.url: /http-match/prefix/segment/nested
+      url.full: /http-match/prefix/segment/nested
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1
@@ -103,6 +107,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/texact/out-peer-res
       http.url: /http-match/texact/out-peer-res
+      url.full: /http-match/texact/out-peer-res
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1
@@ -120,6 +125,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/tprefix/out-peer-tenant/items
       http.url: /http-match/tprefix/out-peer-tenant/items
+      url.full: /http-match/tprefix/out-peer-tenant/items
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1
@@ -137,6 +143,7 @@ spans:
     spanAttributesContainsAny:
       url.path: /http-match/tprefix/out-peer-tenant/items/out-peer-item
       http.url: /http-match/tprefix/out-peer-tenant/items/out-peer-item
+      url.full: /http-match/tprefix/out-peer-tenant/items/out-peer-item
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
       minimum: 1

@@ -6,7 +6,7 @@ description: |
   External curl calls produce root server spans (no parentSpanId) with odigos.sampling.* attrs.
   Periodic http-client outbound calls hit overlapping routes but their server spans are children
   of the client span (parentSpanId set), so rootSpan: true isolates curl-job traffic.
-  Express reports templatized routes with :param segments in http.route.
+  Express reports templatized routes with :param segments in http.route; Spring uses {param}.
   spanAttributesAny accepts legacy (http.status_code) or stable semconv (http.response.status_code).
 serviceName: head-sampling-http-server
 rootSpan: true
@@ -74,13 +74,14 @@ spans:
     description: call_many 20x GET /http-match/texact/res-42 — http-match-templatized-exact (50%)
     samplingDecision: |
       http-match-templatized-exact matches templated route /http-match/texact/* (percentageAtMost 50%).
-      Express http.route is /http-match/texact/:resourceId.
+      Express http.route is /http-match/texact/:resourceId; Spring uses /http-match/texact/{resourceId}.
     kind: server
     spanAttributes:
-      http.route: /http-match/texact/:resourceId
       odigos.sampling.category: noise
       odigos.sampling.dry_run: true
       odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesContains:
+      http.route: /http-match/texact/
     spanAttributesAny: *http_status_200
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
@@ -90,13 +91,16 @@ spans:
     description: call_many 20x GET /http-match/tprefix/tenant-a/items — http-match-templatized-prefix (50%)
     samplingDecision: |
       http-match-templatized-prefix matches routePrefix /http-match/tprefix/*/items (percentageAtMost 50%).
-      Express http.route is /http-match/tprefix/:tenantId/items.
+      Express http.route is /http-match/tprefix/:tenantId/items; Spring uses /http-match/tprefix/{tenantId}/items.
     kind: server
     spanAttributes:
-      http.route: /http-match/tprefix/:tenantId/items
       odigos.sampling.category: noise
       odigos.sampling.dry_run: true
       odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesContains:
+      http.route: /http-match/tprefix/
+    spanAttributesEndsWith:
+      http.route: /items
     spanAttributesAny: *http_status_200
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
@@ -106,13 +110,14 @@ spans:
     description: call_many 20x GET /http-match/tprefix/tenant-b/items/item-7 — http-match-templatized-prefix (50%)
     samplingDecision: |
       http-match-templatized-prefix matches deeper paths under /http-match/tprefix/*/items (percentageAtMost 50%).
-      Express http.route is /http-match/tprefix/:tenantId/items/:itemId.
+      Express http.route is /http-match/tprefix/:tenantId/items/:itemId; Spring uses /http-match/tprefix/{tenantId}/items/{itemId}.
     kind: server
     spanAttributes:
-      http.route: /http-match/tprefix/:tenantId/items/:itemId
       odigos.sampling.category: noise
       odigos.sampling.dry_run: true
       odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesContains:
+      http.route: /items/
     spanAttributesAny: *http_status_200
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
