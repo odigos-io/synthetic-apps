@@ -4,6 +4,8 @@ LANG := nodejs
 include ../../../depot.mk
 include ../scenario.mk
 
+VERSION_VARIANTS := versionlatest versionminimum versionminimumlegacy versionunsupported versionveryold
+
 IMAGE_PREFIX := $(DEPOT_REGISTRY)/synthetic-apps:$(LANG)-runtime-versions
 
 .PHONY: build
@@ -30,7 +32,6 @@ deploy:
 	$(MAKE) build
 	$(MAKE) load-to-kind
 	$(MAKE) apply
-	$(MAKE) rollout
 
 .PHONY: status
 status:

@@ -31,6 +31,21 @@ status:
 apiVersion: odigos.io/v1alpha1
 kind: InstrumentationConfig
 metadata:
+  name: deployment-versionminimumlegacy
+  namespace: nodejs-runtime-versions
+  ownerReferences:
+    - apiVersion: apps/v1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: versionminimumlegacy
+status:
+  (conditions[?type == 'MarkedForInstrumentation']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
   name: deployment-versionunsupported
   namespace: nodejs-runtime-versions
   ownerReferences:

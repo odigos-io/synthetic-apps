@@ -23,7 +23,7 @@ Assertions cover runtime detection, InstrumentationConfig state, agent injection
 |---------|---------|
 | `versionlatest` | Latest supported runtime |
 | `versionminimum` | Minimum advertised supported runtime |
-| `versionminimumlegacy` | Legacy minimum (Python only) |
+| `versionminimumlegacy` | Legacy minimum (Python 3.8, Node.js 14) |
 | `versionunsupported` | Below minimum — detected, not instrumented |
 | `versionveryold` | Runtime cannot be decided — agent injected but must not crash the app |
 

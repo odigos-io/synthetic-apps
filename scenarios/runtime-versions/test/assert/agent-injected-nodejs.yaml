@@ -83,6 +83,47 @@ status:
 apiVersion: v1
 kind: Pod
 metadata:
+  (contains(keys(labels), 'odigos.io/agents-meta-hash')): true
+  labels:
+    app: versionminimumlegacy
+  namespace: nodejs-runtime-versions
+spec:
+  containers:
+    - name: versionminimumlegacy
+      (env[?name == 'ODIGOS_WORKLOAD_NAMESPACE']):
+        - value: nodejs-runtime-versions
+status:
+  containerStatuses:
+    - name: versionminimumlegacy
+      started: true
+      ready: true
+      restartCount: 0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: versionminimumlegacy
+  namespace: nodejs-runtime-versions
+status:
+  observedGeneration: 2
+  replicas: 1
+  updatedReplicas: 1
+  readyReplicas: 1
+  availableReplicas: 1
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationInstance
+metadata:
+  namespace: nodejs-runtime-versions
+  labels:
+    instrumented-app: deployment-versionminimumlegacy
+status:
+  healthy: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
   (contains(keys(labels), 'odigos.io/agents-meta-hash')): false
   labels:
     app: versionunsupported

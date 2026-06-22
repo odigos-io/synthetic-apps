@@ -23,14 +23,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - lang: nodejs
-          #   variant: versionlatest
-          # - lang: nodejs
-          #   variant: versionminimum
-          # - lang: nodejs
-          #   variant: versionunsupported
-          # - lang: nodejs
-          #   variant: versionveryold
+          - lang: nodejs
+            variant: versionlatest
+          - lang: nodejs
+            variant: versionminimum
+          - lang: nodejs
+            variant: versionminimumlegacy
+          - lang: nodejs
+            variant: versionunsupported
+          - lang: nodejs
+            variant: versionveryold
           - lang: python
             variant: versionlatest
           - lang: python

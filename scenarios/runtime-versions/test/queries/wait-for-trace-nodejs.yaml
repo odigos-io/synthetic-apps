@@ -1,8 +1,34 @@
 apiVersion: e2e.tests.odigos.io/v1
-kind: TraceTest
-description: Wait for traces from supported runtime versions in nodejs-runtime-versions
-query: |
-  length([?span.serviceName == 'versionlatest' && span.resourceAttributes."k8s.namespace.name" == 'nodejs-runtime-versions' && span.spanAttributes."http.route" == '/static/success']) > `0` ||
-  length([?span.serviceName == 'versionminimum' && span.resourceAttributes."k8s.namespace.name" == 'nodejs-runtime-versions' && span.spanAttributes."http.route" == '/static/success']) > `0`
-expected:
-  count: 2
+kind: SpanBatchTest
+description: |
+  Spans from supported Node.js runtime versions in nodejs-runtime-versions
+  after generate-traffic job (scenarios/runtime-versions/test/apply/generate-traffic-nodejs.yaml).
+serviceName: versionlatest
+resourceAttributes:
+  k8s.namespace.name: nodejs-runtime-versions
+spans:
+  - id: versionlatest
+    description: GET /static/success on versionlatest deployment (supported runtime)
+    kind: server
+    spanAttributes:
+      http.route: /static/success
+    expected:
+      minimum: 1
+
+  - id: versionminimum
+    description: GET /static/success on versionminimum deployment (supported runtime)
+    serviceName: versionminimum
+    kind: server
+    spanAttributes:
+      http.route: /static/success
+    expected:
+      minimum: 1
+
+  - id: versionminimumlegacy
+    description: GET /static/success on versionminimumlegacy deployment (legacy agent, Node.js 14)
+    serviceName: versionminimumlegacy
+    kind: server
+    spanAttributes:
+      http.route: /static/success
+    expected:
+      minimum: 1

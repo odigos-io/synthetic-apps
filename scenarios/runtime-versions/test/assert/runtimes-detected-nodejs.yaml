@@ -22,6 +22,19 @@ status:
   runtimeDetailsByContainer:
     - containerName: versionminimum
       language: javascript
+      runtimeVersion: 18.0.0
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-versionminimumlegacy
+  namespace: nodejs-runtime-versions
+status:
+  (conditions[?type == 'RuntimeDetection']):
+    - status: 'True'
+  runtimeDetailsByContainer:
+    - containerName: versionminimumlegacy
+      language: javascript
       runtimeVersion: 14.0.0
 ---
 apiVersion: odigos.io/v1alpha1

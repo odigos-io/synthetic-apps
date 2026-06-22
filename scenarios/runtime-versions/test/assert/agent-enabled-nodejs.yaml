@@ -29,6 +29,20 @@ status:
 apiVersion: odigos.io/v1alpha1
 kind: InstrumentationConfig
 metadata:
+  name: deployment-versionminimumlegacy
+  namespace: nodejs-runtime-versions
+spec:
+  agentInjectionEnabled: True
+  containers:
+    - containerName: versionminimumlegacy
+      agentEnabled: True
+status:
+  (conditions[?type == 'AgentEnabled']):
+    - status: 'True'
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
   name: deployment-versionunsupported
   namespace: nodejs-runtime-versions
 spec:

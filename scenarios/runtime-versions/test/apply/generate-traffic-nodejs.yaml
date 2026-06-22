@@ -20,5 +20,6 @@ spec:
               set -e
               curl -s --fail http://versionlatest:8080/static/success
               curl -s --fail http://versionminimum:8080/static/success
+              curl -s --fail http://versionminimumlegacy:8080/static/success
               curl -s --fail http://versionunsupported:8080/static/success
               curl -s --fail http://versionveryold:8080/static/success

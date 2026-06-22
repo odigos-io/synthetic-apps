@@ -4,6 +4,8 @@ sources:
     workload: versionlatest
   - name: instrument-versionminimum
     workload: versionminimum
+  - name: instrument-versionminimumlegacy
+    workload: versionminimumlegacy
   - name: instrument-versionunsupported
     workload: versionunsupported
   - name: instrument-versionveryold

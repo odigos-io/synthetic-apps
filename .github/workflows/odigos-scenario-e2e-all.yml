@@ -55,6 +55,14 @@ jobs:
             language: nodejs
             otel_distro_name: 'nodejs-enterprise'
           - scenario: head-sampling-http
+            tier: oss
+            language: python
+            otel_distro_name: 'python-community'
+          - scenario: head-sampling-http
+            tier: enterprise
+            language: python
+            otel_distro_name: 'python-enterprise'
+          - scenario: head-sampling-http
             tier: enterprise
             language: java
             otel_distro_name: 'java-enterprise'
@@ -70,10 +78,10 @@ jobs:
             otel_distro_name: 'nodejs-enterprise'
 
           #### Runtime Versions ####
-          # - scenario: runtime-versions
-          #   tier: oss
-          #   language: nodejs
-          #   otel_distro_name: 'nodejs-community'
+          - scenario: runtime-versions
+            tier: oss
+            language: nodejs
+            otel_distro_name: 'nodejs-community'
           - scenario: runtime-versions
             tier: oss
             language: python
