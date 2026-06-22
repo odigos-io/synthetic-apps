@@ -74,13 +74,15 @@ spans:
     description: call_many 20x GET /http-match/texact/res-42 — http-match-templatized-exact (50%)
     samplingDecision: |
       http-match-templatized-exact matches templated route /http-match/texact/* (percentageAtMost 50%).
-      Express http.route is /http-match/texact/:resourceId.
+      http.route templated param delimiter varies by framework (Express :resourceId,
+      Flask <resource_id>, Spring {resourceId}); assert the framework-neutral static prefix.
     kind: server
     spanAttributes:
-      http.route: /http-match/texact/:resourceId
       odigos.sampling.category: noise
       odigos.sampling.dry_run: true
       odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesContains:
+      http.route: /http-match/texact/
     spanAttributesAny: *http_status_200
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
@@ -90,13 +92,17 @@ spans:
     description: call_many 20x GET /http-match/tprefix/tenant-a/items — http-match-templatized-prefix (50%)
     samplingDecision: |
       http-match-templatized-prefix matches routePrefix /http-match/tprefix/*/items (percentageAtMost 50%).
-      Express http.route is /http-match/tprefix/:tenantId/items.
+      http.route templated tenant segment delimiter varies by framework; assert the
+      framework-neutral static segments: under /http-match/tprefix/ and ending in /items.
     kind: server
     spanAttributes:
-      http.route: /http-match/tprefix/:tenantId/items
       odigos.sampling.category: noise
       odigos.sampling.dry_run: true
       odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesContains:
+      http.route: /http-match/tprefix/
+    spanAttributesEndsWith:
+      http.route: /items
     spanAttributesAny: *http_status_200
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
@@ -106,13 +112,15 @@ spans:
     description: call_many 20x GET /http-match/tprefix/tenant-b/items/item-7 — http-match-templatized-prefix (50%)
     samplingDecision: |
       http-match-templatized-prefix matches deeper paths under /http-match/tprefix/*/items (percentageAtMost 50%).
-      Express http.route is /http-match/tprefix/:tenantId/items/:itemId.
+      http.route templated param delimiters vary by framework; assert the framework-neutral
+      static segment /items/ (the trailing item id makes this distinct from the non-nested route).
     kind: server
     spanAttributes:
-      http.route: /http-match/tprefix/:tenantId/items/:itemId
       odigos.sampling.category: noise
       odigos.sampling.dry_run: true
       odigos.sampling.trace.deciding_rule.keep_percentage: 50
+    spanAttributesContains:
+      http.route: /items/
     spanAttributesAny: *http_status_200
     spanAttributesAbsent: *absent_tail_sampling_attrs
     expected:
