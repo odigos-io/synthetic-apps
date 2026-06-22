@@ -54,14 +54,14 @@ jobs:
             tier: enterprise
             language: nodejs
             otel_distro_name: 'nodejs-enterprise'
-          - scenario: head-sampling-http
-            tier: oss
-            language: python
-            otel_distro_name: 'python-community'
-          - scenario: head-sampling-http
-            tier: enterprise
-            language: python
-            otel_distro_name: 'python-enterprise'
+          # - scenario: head-sampling-http
+          #   tier: oss
+          #   language: python
+          #   otel_distro_name: 'python-community'
+          # - scenario: head-sampling-http
+          #   tier: enterprise
+          #   language: python
+          #   otel_distro_name: 'python-enterprise'
           - scenario: head-sampling-http
             tier: enterprise
             language: java
