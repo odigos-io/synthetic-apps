@@ -24,7 +24,10 @@
 #       spanAttributesContains: { http.target: "hops=3" }
 #       spanAttributesContainsAny: { http.target: "hops=3", url.query: "hops=3" }  # OR
 #       spanStatusError: true
+#       rootSpan: true              # span has no parentSpanId (!parentSpanId in JMESPath)
 #       expected: { minimum: 1 }   # or count: N
+#
+#   SpanBatchTest may set rootSpan: true at batch level (applies to every span unless a span sets rootSpan: false).
 #
 set -euo pipefail
 
@@ -205,11 +208,29 @@ append_span_field_matchers_from_yq_path() {
   done < <(yq_read "$file" "$yq_path" "spanAttributesAbsent" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
 }
 
+append_root_span_matcher_from_yq_paths() {
+  local file=$1
+  local span_yq_path=$2
+  local batch_yq_path=${3:-.}
+
+  local batch_root_span span_root_span
+  batch_root_span=$(yq e "explode(.) | ${batch_yq_path} | .rootSpan // \"\"" "$file")
+  span_root_span=$(yq_read "$file" "$span_yq_path" "rootSpan" ' // ""')
+
+  if [[ "$span_root_span" == "false" ]]; then
+    return
+  fi
+  if [[ "$span_root_span" == "true" || "$batch_root_span" == "true" ]]; then
+    append_condition "!parentSpanId"
+  fi
+}
+
 append_matchers_from_yq_path() {
   local file=$1
   local yq_path=$2
   append_span_field_matchers_from_yq_path "$file" "$yq_path"
   append_resource_matchers_from_yq_path "$file" "$yq_path"
+  append_root_span_matcher_from_yq_paths "$file" "$yq_path" "."
 }
 
 build_query_from_match() {
@@ -244,6 +265,7 @@ build_query_for_batch_span() {
 
   append_resource_matchers_from_yq_path "$file" "."
   append_span_field_matchers_from_yq_path "$file" "$span_path" "true"
+  append_root_span_matcher_from_yq_paths "$file" "$span_path" "."
 
   if [[ -z "$SPAN_MATCH_QUERY" ]]; then
     echo "SpanBatchTest span[${span_index}] must define span fields or query: $file" >&2
@@ -276,7 +298,8 @@ span_has_match_fields() {
     ((.spanAttributesContains // {}) | length) > 0 or
     ((.spanAttributesAny // {}) | length) > 0 or
     ((.spanAttributesContainsAny // {}) | length) > 0 or
-    ((.spanAttributesAbsent // {}) | length) > 0
+    ((.spanAttributesAbsent // {}) | length) > 0 or
+    (.rootSpan != null)
   )" "$file")
   [[ "$count" == "true" ]]
 }

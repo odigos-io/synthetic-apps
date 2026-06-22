@@ -6,7 +6,9 @@ description: |
   External grpcurl calls produce server spans with parentSpanId null and curl-job rule IDs
   (distinct from grpc-client periodic spans which share the same RPC methods but different rule IDs).
   Head sampling noisy-operation rules; dryRun exports all spans with decision attrs.
+  rootSpan: true isolates external grpcurl server spans from periodic grpc-client children.
 serviceName: grpc-server
+rootSpan: true
 resourceAttributes:
   odigos.workload.kind: Deployment
   odigos.workload.name: grpc-server

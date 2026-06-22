@@ -3,11 +3,13 @@ kind: SpanBatchTest
 description: |
   HTTP server spans on head-sampling-http-server after head-sampling-http-server-curls job
   (scenarios/head-sampling-http/<language>/deployments/http-server/curl-job.yaml).
-  External curl calls produce server spans with odigos.sampling.* attrs (distinct from
-  periodic http-client outbound spans which share routes but lack sampling attrs).
+  External curl calls produce root server spans (no parentSpanId) with odigos.sampling.* attrs.
+  Periodic http-client outbound calls hit overlapping routes but their server spans are children
+  of the client span (parentSpanId set), so rootSpan: true isolates curl-job traffic.
   Express reports templatized routes with :param segments in http.route.
   spanAttributesAny accepts legacy (http.status_code) or stable semconv (http.response.status_code).
 serviceName: head-sampling-http-server
+rootSpan: true
 resourceAttributesEndsWith:
   k8s.namespace.name: "-head-sampling"
 resourceAttributes:
