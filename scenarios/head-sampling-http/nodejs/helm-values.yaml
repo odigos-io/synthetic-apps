@@ -8,3 +8,5 @@ sources:
     workload: head-sampling-http-client
   - name: instrument-kubelet-health-probes
     workload: kubelet-health-probes
+  - name: instrument-kubelet-health-probes-query-params
+    workload: kubelet-health-probes-query-params

@@ -40,6 +40,79 @@ app.get('/healthz', function (req, res) {
   res.status(200).json({ status: 'healthy' });
 });
 
+function resolveGraphqlHealthCheckProbeType(req) {
+  var operationName = req.query.operationName;
+  if (operationName === 'HealthCheckStartup') {
+    return 'startup';
+  }
+  if (operationName === 'HealthCheckReady') {
+    return 'ready';
+  }
+  if (operationName === 'HealthCheckLive') {
+    return 'live';
+  }
+
+  var queryParam = req.query.query;
+  var queries = Array.isArray(queryParam) ? queryParam : queryParam ? [queryParam] : [];
+  if (queries.length >= 2) {
+    return 'live';
+  }
+
+  var query = queries[0] || '';
+  if (query.indexOf('HealthCheckStartup') !== -1) {
+    return 'startup';
+  }
+  if (query.indexOf('HealthCheckReady') !== -1) {
+    return 'ready';
+  }
+  if (query.indexOf('HealthCheckLive') !== -1) {
+    return 'live';
+  }
+  return null;
+}
+
+function graphqlHealthCheckData(probeType) {
+  if (probeType === 'live') {
+    return { data: { status: 'alive', __typename: 'Query' } };
+  }
+  if (probeType === 'startup') {
+    return { data: { status: 'started', __typename: 'Query' } };
+  }
+  return { data: { status: 'ready', __typename: 'Query' } };
+}
+
+app.get('/graphql', function (req, res) {
+  var probeType = resolveGraphqlHealthCheckProbeType(req);
+  if (!probeType) {
+    return res.status(400).json({ errors: [{ message: 'unknown GraphQL health check query' }] });
+  }
+
+  if (probeType === 'live') {
+    return res.status(200).json(graphqlHealthCheckData('live'));
+  }
+
+  if (!SIMULATE_STARTUP_DELAY) {
+    return res.status(200).json(graphqlHealthCheckData(probeType));
+  }
+
+  var elapsed = Date.now() - startTime;
+  if (probeType === 'startup') {
+    if (elapsed >= STARTUP_DELAY_MS) {
+      return res.status(200).json(graphqlHealthCheckData('startup'));
+    }
+    return res.status(503).json({
+      errors: [{ message: 'starting', extensions: { remaining_ms: STARTUP_DELAY_MS - elapsed } }],
+    });
+  }
+
+  if (elapsed >= READY_DELAY_MS) {
+    return res.status(200).json(graphqlHealthCheckData('ready'));
+  }
+  return res.status(503).json({
+    errors: [{ message: 'not_ready', extensions: { remaining_ms: READY_DELAY_MS - elapsed } }],
+  });
+});
+
 // No sampling rule targets this endpoint — traces are subject to the default pipeline behavior
 app.get('/sampling/percentage/no-rule', function (req, res) {
   res.status(200).json({ endpoint: '/sampling/percentage/no-rule', description: 'no sampling rule matches this endpoint' });

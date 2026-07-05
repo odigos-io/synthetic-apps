@@ -1,0 +1,56 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubelet-health-probes-query-params
+  labels:
+    app: kubelet-health-probes-query-params
+spec:
+  selector:
+    matchLabels:
+      app: kubelet-health-probes-query-params
+  template:
+    metadata:
+      labels:
+        app: kubelet-health-probes-query-params
+    spec:
+      containers:
+        - name: kubelet-health-probes-query-params
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-head-sampling-http
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SIMULATE_STARTUP_DELAY
+              value: "true"
+          startupProbe:
+            httpGet:
+              # query HealthCheckStartup { __typename } — one query param, one value
+              path: /graphql?query=query%20HealthCheckStartup%7B__typename%7D
+              port: 8080
+            periodSeconds: 1
+            failureThreshold: 20
+          readinessProbe:
+            httpGet:
+              # query HealthCheckReady { __typename } — two query params (query + operationName)
+              path: /graphql?query=query%20HealthCheckReady%7B__typename%7D&operationName=HealthCheckReady
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              # query HealthCheckLive { __typename } + { status } — one query param, two values
+              path: /graphql?query=query%20HealthCheckLive%7B__typename%7D&query=query%20HealthCheckLive%7Bstatus%7D
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubelet-health-probes-query-params
+spec:
+  selector:
+    app: kubelet-health-probes-query-params
+  ports:
+    - protocol: TCP
+      port: 8080
