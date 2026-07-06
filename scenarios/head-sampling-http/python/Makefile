@@ -19,6 +19,7 @@ apply: ensure-namespace
 	kubectl apply -n python-head-sampling -f deployments/http-server/k8s.yaml
 	kubectl apply -n python-head-sampling -f deployments/http-client/k8s.yaml
 	kubectl apply -n python-head-sampling -f deployments/kubelet-health-probes/k8s.yaml
+	kubectl apply -n python-head-sampling -f deployments/kubelet-health-probes-query-params/k8s.yaml
 	$(MAKE) apply-odigos-sources
 	kubectl apply -n odigos-system -f deployments/head-sampling/sampling.yaml
 	kubectl apply -n odigos-system -f deployments/http-server/sampling.yaml
@@ -26,11 +27,12 @@ apply: ensure-namespace
 
 .PHONY: rollout
 rollout:
-	kubectl rollout restart deployment/head-sampling deployment/head-sampling-http-server deployment/head-sampling-http-client deployment/kubelet-health-probes -n python-head-sampling
+	kubectl rollout restart deployment/head-sampling deployment/head-sampling-http-server deployment/head-sampling-http-client deployment/kubelet-health-probes deployment/kubelet-health-probes-query-params -n python-head-sampling
 	kubectl rollout status deployment/head-sampling -n python-head-sampling --timeout=120s
 	kubectl rollout status deployment/head-sampling-http-server -n python-head-sampling --timeout=120s
 	kubectl rollout status deployment/head-sampling-http-client -n python-head-sampling --timeout=120s
 	kubectl rollout status deployment/kubelet-health-probes -n python-head-sampling --timeout=120s
+	kubectl rollout status deployment/kubelet-health-probes-query-params -n python-head-sampling --timeout=120s
 
 .PHONY: deploy
 deploy:

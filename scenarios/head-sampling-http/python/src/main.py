@@ -7,7 +7,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -72,6 +72,84 @@ def health_live():
 @app.get("/healthz")
 def healthz():
     return jsonify({"status": "healthy"}), 200
+
+
+def _resolve_graphql_health_check_probe_type() -> str | None:
+    operation_name = request.args.get("operationName")
+    if operation_name == "HealthCheckStartup":
+        return "startup"
+    if operation_name == "HealthCheckReady":
+        return "ready"
+    if operation_name == "HealthCheckLive":
+        return "live"
+
+    queries = request.args.getlist("query")
+    if len(queries) >= 2:
+        return "live"
+
+    query = queries[0] if queries else ""
+    if "HealthCheckStartup" in query:
+        return "startup"
+    if "HealthCheckReady" in query:
+        return "ready"
+    if "HealthCheckLive" in query:
+        return "live"
+    return None
+
+
+def _graphql_health_check_data(probe_type: str) -> dict[str, Any]:
+    if probe_type == "live":
+        return {"data": {"status": "alive", "__typename": "Query"}}
+    if probe_type == "startup":
+        return {"data": {"status": "started", "__typename": "Query"}}
+    return {"data": {"status": "ready", "__typename": "Query"}}
+
+
+@app.get("/graphql")
+def graphql_health_check():
+    probe_type = _resolve_graphql_health_check_probe_type()
+    if probe_type is None:
+        return jsonify({"errors": [{"message": "unknown GraphQL health check query"}]}), 400
+
+    if probe_type == "live":
+        return jsonify(_graphql_health_check_data("live")), 200
+
+    if not SIMULATE_STARTUP_DELAY:
+        return jsonify(_graphql_health_check_data(probe_type)), 200
+
+    elapsed = _elapsed_ms()
+    if probe_type == "startup":
+        if elapsed >= STARTUP_DELAY_MS:
+            return jsonify(_graphql_health_check_data("startup")), 200
+        return (
+            jsonify(
+                {
+                    "errors": [
+                        {
+                            "message": "starting",
+                            "extensions": {"remaining_ms": STARTUP_DELAY_MS - elapsed},
+                        }
+                    ]
+                }
+            ),
+            503,
+        )
+
+    if elapsed >= READY_DELAY_MS:
+        return jsonify(_graphql_health_check_data("ready")), 200
+    return (
+        jsonify(
+            {
+                "errors": [
+                    {
+                        "message": "not_ready",
+                        "extensions": {"remaining_ms": READY_DELAY_MS - elapsed},
+                    }
+                ]
+            }
+        ),
+        503,
+    )
 
 
 @app.get("/sampling/percentage/no-rule")
