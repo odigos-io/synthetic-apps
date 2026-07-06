@@ -81,10 +81,33 @@ function graphqlHealthCheckData(probeType) {
   return { data: { status: 'ready', __typename: 'Query' } };
 }
 
+function graphqlApplicativeData(req) {
+  var operationName = req.query.operationName;
+  var queryParam = req.query.query;
+  var queries = Array.isArray(queryParam) ? queryParam : queryParam ? [queryParam] : [];
+  var query = queries[0] || '';
+
+  if (operationName === 'GetUser' || query.indexOf('GetUser') !== -1) {
+    return { data: { user: { id: '1', name: 'Alice', __typename: 'User' }, __typename: 'Query' } };
+  }
+  if (operationName === 'ListItems' || query.indexOf('ListItems') !== -1) {
+    return {
+      data: {
+        items: [{ id: '1', title: 'Item 1', __typename: 'Item' }],
+        __typename: 'Query',
+      },
+    };
+  }
+  if (operationName === 'GetItem' || query.indexOf('GetItem') !== -1) {
+    return { data: { item: { id: '42', title: 'Item 42', __typename: 'Item' }, __typename: 'Query' } };
+  }
+  return { data: { ok: true, __typename: 'Query' } };
+}
+
 app.get('/graphql', function (req, res) {
   var probeType = resolveGraphqlHealthCheckProbeType(req);
   if (!probeType) {
-    return res.status(400).json({ errors: [{ message: 'unknown GraphQL health check query' }] });
+    return res.status(200).json(graphqlApplicativeData(req));
   }
 
   if (probeType === 'live') {

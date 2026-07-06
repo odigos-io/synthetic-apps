@@ -61,6 +61,11 @@ trigger-http-server-curls: ensure-namespace
 	kubectl wait --for=condition=complete job/head-sampling-http-server-curls -n python-head-sampling --timeout=180s || \
 		(kubectl logs job/head-sampling-http-server-curls -n python-head-sampling --tail=200; exit 1)
 	kubectl logs job/head-sampling-http-server-curls -n python-head-sampling
+	kubectl delete job kubelet-health-probes-query-params-curls -n python-head-sampling --ignore-not-found=true
+	kubectl apply -n python-head-sampling -f deployments/kubelet-health-probes-query-params/curl-job.yaml
+	kubectl wait --for=condition=complete job/kubelet-health-probes-query-params-curls -n python-head-sampling --timeout=180s || \
+		(kubectl logs job/kubelet-health-probes-query-params-curls -n python-head-sampling --tail=200; exit 1)
+	kubectl logs job/kubelet-health-probes-query-params-curls -n python-head-sampling
 
 .PHONY: clean
 clean:

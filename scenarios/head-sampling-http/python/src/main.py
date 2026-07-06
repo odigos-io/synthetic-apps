@@ -105,11 +105,40 @@ def _graphql_health_check_data(probe_type: str) -> dict[str, Any]:
     return {"data": {"status": "ready", "__typename": "Query"}}
 
 
+def _graphql_applicative_data() -> dict[str, Any]:
+    operation_name = request.args.get("operationName")
+    queries = request.args.getlist("query")
+    query = queries[0] if queries else ""
+
+    if operation_name == "GetUser" or "GetUser" in query:
+        return {
+            "data": {
+                "user": {"id": "1", "name": "Alice", "__typename": "User"},
+                "__typename": "Query",
+            }
+        }
+    if operation_name == "ListItems" or "ListItems" in query:
+        return {
+            "data": {
+                "items": [{"id": "1", "title": "Item 1", "__typename": "Item"}],
+                "__typename": "Query",
+            }
+        }
+    if operation_name == "GetItem" or "GetItem" in query:
+        return {
+            "data": {
+                "item": {"id": "42", "title": "Item 42", "__typename": "Item"},
+                "__typename": "Query",
+            }
+        }
+    return {"data": {"ok": True, "__typename": "Query"}}
+
+
 @app.get("/graphql")
 def graphql_health_check():
     probe_type = _resolve_graphql_health_check_probe_type()
     if probe_type is None:
-        return jsonify({"errors": [{"message": "unknown GraphQL health check query"}]}), 400
+        return jsonify(_graphql_applicative_data()), 200
 
     if probe_type == "live":
         return jsonify(_graphql_health_check_data("live")), 200

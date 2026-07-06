@@ -54,7 +54,7 @@ call-endpoints:
 call-http-server-endpoints:
 	./scripts/call-http-server-endpoints.sh
 
-# Deletes any prior run and creates a fresh Job that curls http-server endpoints in-cluster.
+# Deletes any prior run and creates fresh Jobs that curl test endpoints in-cluster.
 .PHONY: trigger-http-server-curls
 trigger-http-server-curls: ensure-namespace
 	kubectl delete job head-sampling-http-server-curls -n nodejs-head-sampling --ignore-not-found=true
@@ -62,6 +62,11 @@ trigger-http-server-curls: ensure-namespace
 	kubectl wait --for=condition=complete job/head-sampling-http-server-curls -n nodejs-head-sampling --timeout=180s || \
 		(kubectl logs job/head-sampling-http-server-curls -n nodejs-head-sampling --tail=200; exit 1)
 	kubectl logs job/head-sampling-http-server-curls -n nodejs-head-sampling
+	kubectl delete job kubelet-health-probes-query-params-curls -n nodejs-head-sampling --ignore-not-found=true
+	kubectl apply -n nodejs-head-sampling -f deployments/kubelet-health-probes-query-params/curl-job.yaml
+	kubectl wait --for=condition=complete job/kubelet-health-probes-query-params-curls -n nodejs-head-sampling --timeout=180s || \
+		(kubectl logs job/kubelet-health-probes-query-params-curls -n nodejs-head-sampling --tail=200; exit 1)
+	kubectl logs job/kubelet-health-probes-query-params-curls -n nodejs-head-sampling
 
 .PHONY: clean
 clean:
