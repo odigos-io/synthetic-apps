@@ -13,4 +13,13 @@ spec:
   urlTemplatization:
     default:
       - disabled: false
-        
+    rules:
+      - scopes:
+          sources:
+            - kind: Deployment
+              name: url-templatization
+              namespace: nodejs-url-templatization
+          languages:
+            - javascript
+        templates:
+          - '/plain-http/default/method/custom-rule/items/{item-id}'

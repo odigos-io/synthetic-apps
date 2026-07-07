@@ -1,4 +1,5 @@
 var examples = require('./default-examples');
+var methodExamples = require('./method-examples');
 var requestLog = require('./request-log');
 
 function requestPathname(req) {
@@ -37,6 +38,28 @@ function handlePlainHttpRequest(req, res, port) {
       framework: 'none',
       description: 'Use /plain-http/default and child paths. Spans lack framework http.route.',
     }, { path: pathname, category: 'index' });
+    return true;
+  }
+
+  var methodRoute = methodExamples.methodRouteList().find(function (route) {
+    return route.path === pathname;
+  });
+  if (methodRoute) {
+    respondPlain(
+      req,
+      res,
+      200,
+      examples.inboundPayload('plain-http', 'default', 'method_test', pathname, {
+        method_test: methodRoute.id,
+        description: methodRoute.description,
+      }),
+      {
+        path: pathname,
+        category: 'method_test',
+        rule_set: 'default',
+        method_test: methodRoute.id,
+      }
+    );
     return true;
   }
 

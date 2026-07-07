@@ -69,3 +69,8 @@ call_endpoint "$PREFIX_PLAIN/default/errors/400"
 call_endpoint "$PREFIX_PLAIN/default/errors/401"
 call_endpoint "$PREFIX_PLAIN/default/errors/404"
 call_endpoint "$PREFIX_PLAIN/default/errors/500"
+
+call_endpoint "$PREFIX_PLAIN/default/method/custom-rule/items/widget"
+call_endpoint "$PREFIX_PLAIN/default/method/default-heuristic/orders/1234567"
+call_endpoint "$PREFIX_PLAIN/default/method/unchanged/catalog/widgets/tools"
+call_endpoint "//"

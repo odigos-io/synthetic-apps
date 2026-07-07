@@ -11,6 +11,8 @@ spec:
     - containerName: url-templatization
       urlTemplatization:
         default: {}
+        templatizationRules:
+          - '/plain-http/default/method/custom-rule/items/{item-id}'
 ---
 apiVersion: odigos.io/v1alpha1
 kind: InstrumentationConfig

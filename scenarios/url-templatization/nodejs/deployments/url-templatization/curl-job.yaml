@@ -85,4 +85,10 @@ spec:
               echo "GET $${BASE_URL}$${PREFIX_PLAIN}/default/errors/500 (expect 500)"
               call_expect_status "$${PREFIX_PLAIN}/default/errors/500" "500"
 
+              call_ok "$${PREFIX_PLAIN}/default/method/custom-rule/items/widget"
+              call_ok "$${PREFIX_PLAIN}/default/method/default-heuristic/orders/1234567"
+              call_ok "$${PREFIX_PLAIN}/default/method/unchanged/catalog/widgets/tools"
+              echo "GET $${BASE_URL}// (path normalization)"
+              call_ok "//"
+
               echo "all curls succeeded"

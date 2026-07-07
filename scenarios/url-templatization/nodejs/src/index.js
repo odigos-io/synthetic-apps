@@ -3,6 +3,7 @@ var express = require('express');
 var httpFramework = require('./http-framework');
 var plainHttp = require('./plain-http');
 var examples = require('./default-examples');
+var methodExamples = require('./method-examples');
 var requestLog = require('./request-log');
 
 var PORT = parseInt(process.env.PORT || '8080', 10);
@@ -44,7 +45,27 @@ app.use(function (req, res) {
   });
 });
 
+function handlePathNormalizationRawUrl(req, res) {
+  if (!methodExamples.isPathNormalizationRawUrl(req.url)) {
+    return false;
+  }
+
+  var rawPath = req.url.split('?')[0];
+  examples.jsonResponse(res, 200, {
+    server_kind: 'plain-http',
+    category: 'method_test',
+    method: 'path_normalization',
+    raw_url: req.url,
+    raw_path: rawPath,
+    description: methodExamples.routes.pathNormalization.description,
+  });
+  return true;
+}
+
 var server = http.createServer(function (req, res) {
+  if (handlePathNormalizationRawUrl(req, res)) {
+    return;
+  }
   if (plainHttp.handlePlainHttpRequest(req, res, PORT)) {
     return;
   }

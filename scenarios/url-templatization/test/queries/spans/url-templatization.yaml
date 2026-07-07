@@ -385,3 +385,49 @@ spans:
       url.template: /plain-http/default/templated/{id}/foo/bar/baz
     expected:
       minimum: 1
+
+  - id: method-custom-rule
+    description: |
+      GET /plain-http/default/method/custom-rule/items/widget (custom_rule)
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/method/custom-rule/items/{item-id}
+      http.target: /plain-http/default/method/custom-rule/items/widget
+      odigos.url_templatization.method: custom_rule
+    expected:
+      minimum: 1
+  - id: method-default-heuristic
+    description: |
+      GET /plain-http/default/method/default-heuristic/orders/1234567 (default_heuristic)
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/method/default-heuristic/orders/{id}
+      http.target: /plain-http/default/method/default-heuristic/orders/1234567
+      odigos.url_templatization.method: default_heuristic
+    expected:
+      minimum: 1
+  - id: method-unchanged
+    description: |
+      GET /plain-http/default/method/unchanged/catalog/widgets/tools (unchanged)
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/method/unchanged/catalog/widgets/tools
+      http.target: /plain-http/default/method/unchanged/catalog/widgets/tools
+      odigos.url_templatization.method: unchanged
+    expected:
+      minimum: 1
+  # Not tested: GET // for path_normalization. Node.js @opentelemetry/instrumentation-http
+  # records http.url as "[object Object]" for raw all-slash URLs (no http.target/url.path),
+  # so the Odigos processor cannot apply path_normalization and the span never matches.
+  # - id: method-path-normalization
+  #   description: |
+  #     GET // (path_normalization)
+  #   kind: server
+  #   spanAttributes:
+  #     http.route: /
+  #     odigos.url_templatization.method: path_normalization
+  #   spanAttributesContainsAny:
+  #     http.target: //
+  #     url.path: //
+  #   expected:
+  #     minimum: 1
