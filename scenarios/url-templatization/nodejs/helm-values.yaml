@@ -1,0 +1,12 @@
+namespace: nodejs-url-templatization
+sources:
+  - name: instrument-url-templatization
+    workload: url-templatization
+  - name: instrument-url-templatization-disabled
+    workload: url-templatization-disabled
+  - name: instrument-url-templatization-skip-status-codes
+    workload: url-templatization-skip-status-codes
+  - name: instrument-url-templatization-rules
+    workload: url-templatization-rules
+  - name: instrument-url-templatization-rules-merge
+    workload: url-templatization-rules-merge

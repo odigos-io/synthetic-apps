@@ -1,24 +1,24 @@
-# Two Actions apply overlapping skipPolicy.skipHttpStatusCodes on this Deployment (401/404 vs 400/404).
+# Same app as url-templatization; custom urlTemplatization.rules applied via Action scope.
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: url-templatization-skip-status-codes
+  name: url-templatization-rules
   labels:
-    app: url-templatization-skip-status-codes
-    url-templatization-scenario: skip-status-codes
+    app: url-templatization-rules
+    url-templatization-scenario: rules
 spec:
   selector:
     matchLabels:
-      app: url-templatization-skip-status-codes
+      app: url-templatization-rules
   template:
     metadata:
       labels:
-        app: url-templatization-skip-status-codes
-        url-templatization-scenario: skip-status-codes
+        app: url-templatization-rules
+        url-templatization-scenario: rules
     spec:
       containers:
         - name: url-templatization
-          image: ghcr.io/odigos-io/synthetic-apps/nodejs-url-templatization:url-templatization
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-url-templatization
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -41,10 +41,10 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: url-templatization-skip-status-codes
+  name: url-templatization-rules
 spec:
   selector:
-    app: url-templatization-skip-status-codes
+    app: url-templatization-rules
   ports:
     - protocol: TCP
       port: 8080

@@ -1,0 +1,88 @@
+# One-off Job: curls url-templatization endpoints in-cluster for span assertions.
+# Trigger with: make trigger-url-templatization-curls (from scenarios/url-templatization/nodejs)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: url-templatization-curls
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: url-templatization-curls
+        odigos.io/test-infra: "true"
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              PREFIX_FRAMEWORK="/http-framework"
+              PREFIX_PLAIN="/plain-http"
+
+              BASE_URL="http://url-templatization:8080"
+              echo "BASE_URL=$${BASE_URL}"
+
+              call_ok() {
+                curl -sS -f -o /dev/null "$${BASE_URL}$$1"
+              }
+              call_expect_status() {
+                path="$$1"
+                expected="$$2"
+                code=$$(curl -sS -o /dev/null -w "%{http_code}" "$${BASE_URL}$${path}")
+                if [ "$$code" != "$$expected" ]; then
+                  echo "expected HTTP $$expected for $${path} got $$code" >&2
+                  exit 1
+                fi
+              }
+              echo "GET $${BASE_URL}/healthz"
+              call_ok "/healthz"
+
+              call_ok "$${PREFIX_FRAMEWORK}/default"
+              call_ok "$${PREFIX_FRAMEWORK}/default/static/a"
+              call_ok "$${PREFIX_FRAMEWORK}/default/static/a/b"
+              call_ok "$${PREFIX_FRAMEWORK}/default/static/a/b/c"
+              call_ok "$${PREFIX_FRAMEWORK}/default/templated/1/foo"
+              call_ok "$${PREFIX_FRAMEWORK}/default/templated/2/foo/bar"
+              call_ok "$${PREFIX_FRAMEWORK}/default/templated/3/foo/bar/baz"
+
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/all"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static/1"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static/2"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/static/3"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated/1"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated/2"
+              call_ok "$${PREFIX_FRAMEWORK}/default/outbound/templated/3"
+
+              call_ok "$${PREFIX_PLAIN}/default"
+              call_ok "$${PREFIX_PLAIN}/default/static/a"
+              call_ok "$${PREFIX_PLAIN}/default/static/a/b"
+              call_ok "$${PREFIX_PLAIN}/default/static/a/b/c"
+              call_ok "$${PREFIX_PLAIN}/default/templated/1/foo"
+              call_ok "$${PREFIX_PLAIN}/default/templated/2/foo/bar"
+              call_ok "$${PREFIX_PLAIN}/default/templated/3/foo/bar/baz"
+
+              call_ok "$${PREFIX_PLAIN}/default/outbound/static"
+              call_ok "$${PREFIX_PLAIN}/default/outbound/templated"
+              call_ok "$${PREFIX_PLAIN}/default/outbound/all"
+
+              echo "GET $${BASE_URL}$${PREFIX_FRAMEWORK}/default/errors/404 (expect 404)"
+              call_expect_status "$${PREFIX_FRAMEWORK}/default/errors/404" "404"
+              echo "GET $${BASE_URL}$${PREFIX_FRAMEWORK}/default/errors/500 (expect 500)"
+              call_expect_status "$${PREFIX_FRAMEWORK}/default/errors/500" "500"
+              echo "GET $${BASE_URL}$${PREFIX_PLAIN}/default/errors/404 (expect 404)"
+              call_expect_status "$${PREFIX_PLAIN}/default/errors/404" "404"
+              echo "GET $${BASE_URL}$${PREFIX_PLAIN}/default/errors/500 (expect 500)"
+              call_expect_status "$${PREFIX_PLAIN}/default/errors/500" "500"
+
+              echo "all curls succeeded"

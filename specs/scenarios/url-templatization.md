@@ -2,7 +2,7 @@
 
 Synthetic app for Odigos **default URL templatization** (workload collector): low-cardinality `http.route` on dynamic paths, framework vs raw HTTP server spans, disabled templatization baseline, and `skipPolicy.skipHttpStatusCodes` on overlapping Actions.
 
-**One binary, five Deployments** — same image and full route table on each; scoped [`Action`](../../nodejs/url-templatization/deployments/url-templatization/url-templatization-action.yaml) CRs pick the scenario. Reference: [`nodejs/url-templatization/`](../../nodejs/url-templatization/). HTTP **8080**, GET (plain-http also HEAD), deterministic JSON.
+**One binary, five Deployments** — same image and full route table on each; scoped [`Action`](../../scenarios/url-templatization/nodejs/deployments/url-templatization/url-templatization-action.yaml) CRs pick the scenario. Reference: [`scenarios/url-templatization/nodejs/`](../../scenarios/url-templatization/nodejs/). HTTP **8080**, GET (plain-http also HEAD), deterministic JSON.
 
 | Deployment | Action manifest(s) | Curl Job (`make trigger`) |
 |------------|-------------------|---------------------------|
@@ -12,7 +12,7 @@ Synthetic app for Odigos **default URL templatization** (workload collector): lo
 | `url-templatization-rules` | `deployments/url-templatization-rules/rules-action.yaml` | same Job |
 | `url-templatization-rules-merge` | `deployments/url-templatization-rules-merge/rules-merge-actions.yaml` | same Job |
 
-E2E: [`tests/url-templatization/chainsaw-test.yaml`](../../tests/url-templatization/chainsaw-test.yaml) (workload-collector config assert + curls; span batch asserts under `tests/url-templatization/queries/spans/`).
+E2E: [`scenarios/url-templatization/test/chainsaw-test.yaml`](../../scenarios/url-templatization/test/chainsaw-test.yaml) (workload-collector config assert + curls; span batch asserts under `scenarios/url-templatization/test/queries/spans/`).
 
 ---
 
@@ -93,7 +93,7 @@ Same route shapes as the Express table; paths replace `/http-framework` with `/p
 
 ## Span assertions
 
-Assert via [`simple_trace_db_span_query_runner.sh`](../../tests/common/assert/simple_trace_db_span_query_runner.sh) + `SpanBatchTest` YAML under `tests/url-templatization/queries/spans/`:
+Assert via [`simple_trace_db_span_query_runner.sh`](../../tests/common/assert/simple_trace_db_span_query_runner.sh) + `SpanBatchTest` YAML under `scenarios/url-templatization/test/queries/spans/`:
 
 | Query file | Deployment | Key checks |
 |------------|------------|------------|
@@ -101,12 +101,12 @@ Assert via [`simple_trace_db_span_query_runner.sh`](../../tests/common/assert/si
 | `url-templatization-disabled.yaml` | `url-templatization-disabled` | Plain-http templated literal on `http.target`; framework still has Express `:seg1` pattern |
 | `url-templatization-skip-status-codes.yaml` | `url-templatization-skip-status-codes` | 2xx templated wildcard; 404 fixed routes (skip list); 500 error span (not skipped) |
 
-Workload-collector `templatizationRules` for **`url-templatization-rules`** and merged rules for **`url-templatization-rules-merge`** are asserted in [`tests/url-templatization/assert/workload-collector-config.yaml`](../../tests/url-templatization/assert/workload-collector-config.yaml).
+Workload-collector `templatizationRules` for **`url-templatization-rules`** and merged rules for **`url-templatization-rules-merge`** are asserted in [`scenarios/url-templatization/test/assert/workload-collector-config.yaml`](../../scenarios/url-templatization/test/assert/workload-collector-config.yaml).
 
 ---
 
 ## Implementing
 
-- Image: `deployments/Dockerfile` — tag e.g. `ghcr.io/odigos-io/synthetic-apps/nodejs-url-templatization:url-templatization`
+- Image: `deployments/url-templatization/Dockerfile` — tag e.g. `p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-url-templatization`
 - Apply Deployments/Services/Sources in app namespace; Actions in `odigos-system`; label Sources for data stream ([`apply-data-stream-to-sources.sh`](../../tests/common/apply/apply-data-stream-to-sources.sh))
 - Local traffic: `scripts/call-endpoints.sh` (includes 400/401 error paths); cluster: `deployments/url-templatization/curl-job.yaml`

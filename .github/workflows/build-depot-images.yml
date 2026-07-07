@@ -9,6 +9,7 @@ on:
       - 'nodejs/grpc/**'
       - 'scenarios/head-sampling-http/**'
       - 'scenarios/tail-sampling/**'
+      - 'scenarios/url-templatization/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -97,3 +98,13 @@ jobs:
           file: scenarios/tail-sampling/java/deployments/tail-sampling/Dockerfile
           context: scenarios/tail-sampling/java
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:java-tail-sampling
+
+      - name: Build and push nodejs-url-templatization
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/url-templatization/nodejs/deployments/url-templatization/Dockerfile
+          context: scenarios/url-templatization/nodejs
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-url-templatization

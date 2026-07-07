@@ -6,84 +6,72 @@ spec:
   description: |
     E2E tests for Odigos default URL templatization (nodejs).
     Prerequisites: a kind cluster with Odigos already installed at the version under test.
-    Usage: make test-url-templatization
+    Usage: make test-url-templatization LANGUAGE=nodejs
   skipDelete: true
   bindings:
     - name: tests_namespace
-      value: nodejs-url-templatization
-    - name: trace_namespace
-      value: ($tests_namespace)
+      value: (join('-', [$values.language, 'url-templatization']))
   steps:
 
     - name: Create Tests Namespace
       try:
         - script:
+            workDir: ../../../
             env:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
             content: |
-              kubectl create namespace "$TESTS_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
 
     - name: Install Simple Trace Db
       try:
-        - script:
-            timeout: 2m
-            env:
-              - name: TRACE_NAMESPACE
-                value: ($tests_namespace)
-            content: |
-              #!/bin/bash
-              set -euo pipefail
-              already_running=false
-              if kubectl get deployment simple-trace-db -n "$TRACE_NAMESPACE" >/dev/null 2>&1; then
-                already_running=true
-              fi
-              sed 's/($trace_namespace)/'"$TRACE_NAMESPACE"'/g' ../common/apply/simple-trace-db-deployment.yaml | kubectl apply -f -
-              if [[ "$already_running" == "true" ]]; then
-                kubectl rollout restart deployment/simple-trace-db -n "$TRACE_NAMESPACE"
-                kubectl rollout status deployment/simple-trace-db -n "$TRACE_NAMESPACE" --timeout=120s
-              fi
+        - apply:
+            file: ../../../tests/common/apply/simple-trace-db-deployment.yaml
+            template: true
 
     - name: Add Destination
       try:
         - apply:
+            file: ./apply/simple-trace-db-destination.yaml
             template: true
-            resource:
-              apiVersion: odigos.io/v1alpha1
-              kind: Destination
-              metadata:
-                name: (join('-', ['simple-trace-db', 'nodejs', 'url-templatization']))
-                namespace: odigos-system
-              spec:
-                data:
-                  OTLP_HTTP_ENDPOINT: (join('', ['http://simple-trace-db.', $trace_namespace, ':4318']))
-                destinationName: e2e-tests
-                signals:
-                  - TRACES
-                type: otlphttp
-                sourceSelector:
-                  dataStreams:
-                    - ($tests_namespace)
 
     - name: deploy test application
       try:
         - script:
-            timeout: 3m
+            timeout: 5m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+              - name: OTEL_DISTRO_NAME
+                value: ($values.otel_distro_name)
             content: |
               #!/bin/bash
               set -euo pipefail
 
-              repo_root="$(cd ../.. && pwd)"
-              app_dir="${repo_root}/nodejs/url-templatization"
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
               if [ ! -d "${app_dir}" ]; then
-                echo "expected app at ${app_dir}"
+                echo "unknown language: ${LANGUAGE} (expected ${app_dir})"
                 exit 1
               fi
 
               kubectl get namespace odigos-system >/dev/null
-              echo "deploying url-templatization app from ${app_dir}"
+              echo "deploying url-templatization app from ${app_dir} into ${TESTS_NAMESPACE}"
+              if [ -n "${OTEL_DISTRO_NAME:-}" ]; then
+                echo "using otel distro override: ${OTEL_DISTRO_NAME}"
+              fi
               cd "${app_dir}"
-              make deploy
+              if [ -n "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make apply NAMESPACE="${TESTS_NAMESPACE}" OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
+                make rollout NAMESPACE="${TESTS_NAMESPACE}"
+              else
+                make deploy NAMESPACE="${TESTS_NAMESPACE}" OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
+              fi
 
     - name: apply data streams to sources
       try:
@@ -92,7 +80,7 @@ spec:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
             content: |
-              ../common/apply/apply-data-stream-to-sources.sh
+              ../../../tests/common/apply/apply-data-stream-to-sources.sh
 
     - name: wait for pods to be instrumented
       try:
@@ -102,9 +90,8 @@ spec:
               - name: TESTS_NAMESPACE
                 value: ($tests_namespace)
             content: |
-              # Chainsaw sets NAMESPACE to its own ephemeral ns; override via env-injected TESTS_NAMESPACE.
               export NAMESPACE="$TESTS_NAMESPACE"
-              ../common/assert/wait-for-pods-instrumented.sh
+              ../../../tests/common/assert/wait-for-pods-instrumented.sh
       catch:
         - script:
             env:
@@ -134,7 +121,7 @@ spec:
             timeout: 2m
             env:
               - name: TRACE_NAMESPACE
-                value: ($tests_namespace)
+                value: ($namespace)
             content: |
               #!/bin/bash
               set -euo pipefail
@@ -144,13 +131,18 @@ spec:
       try:
         - script:
             timeout: 5m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
             content: |
               #!/bin/bash
               set -euo pipefail
 
-              repo_root="$(cd ../.. && pwd)"
-              cd "${repo_root}/nodejs/url-templatization"
-              make trigger-url-templatization-curls
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
+              cd "${app_dir}"
+              make trigger-url-templatization-curls NAMESPACE="${TESTS_NAMESPACE}"
 
     - name: Assert expected spans
       try:
@@ -158,13 +150,13 @@ spec:
             timeout: 2m
             env:
               - name: TRACE_NAMESPACE
-                value: ($trace_namespace)
+                value: ($namespace)
             content: |
               #!/bin/bash
               set -euo pipefail
               deadline=$(($(date +%s) + 120))
               while true; do
-                if ../common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans "$TRACE_NAMESPACE" simple-trace-db; then
+                if ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/url-templatization.yaml "$TRACE_NAMESPACE" simple-trace-db; then
                   exit 0
                 fi
                 if [[ $(date +%s) -ge deadline ]]; then
@@ -177,6 +169,6 @@ spec:
         - script:
             env:
               - name: TRACE_NAMESPACE
-                value: ($trace_namespace)
+                value: ($namespace)
             content: |
-              ../common/assert/simple_trace_db_span_query_runner.sh --dir ./queries/spans --verbose "$TRACE_NAMESPACE" simple-trace-db
+              ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/url-templatization.yaml --verbose "$TRACE_NAMESPACE" simple-trace-db

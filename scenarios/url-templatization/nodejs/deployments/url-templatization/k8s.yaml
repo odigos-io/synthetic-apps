@@ -1,24 +1,23 @@
-# Same app as url-templatization; default URL templatization is disabled via Action scope.
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: url-templatization-disabled
+  name: url-templatization
   labels:
-    app: url-templatization-disabled
-    url-templatization-default: "off"
+    app: url-templatization
+    url-templatization-default: "on"
 spec:
   selector:
     matchLabels:
-      app: url-templatization-disabled
+      app: url-templatization
   template:
     metadata:
       labels:
-        app: url-templatization-disabled
-        url-templatization-default: "off"
+        app: url-templatization
+        url-templatization-default: "on"
     spec:
       containers:
         - name: url-templatization
-          image: ghcr.io/odigos-io/synthetic-apps/nodejs-url-templatization:url-templatization
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-url-templatization
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -41,10 +40,10 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: url-templatization-disabled
+  name: url-templatization
 spec:
   selector:
-    app: url-templatization-disabled
+    app: url-templatization
   ports:
     - protocol: TCP
       port: 8080

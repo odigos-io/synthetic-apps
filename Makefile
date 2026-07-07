@@ -54,9 +54,14 @@ test-runtime-versions: check-chainsaw
 		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
 		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
 
+# Usage: make test-url-templatization LANGUAGE=nodejs
 # Assumes a kind cluster with Odigos already installed at the version under test.
 test-url-templatization: check-chainsaw
-	chainsaw test tests/url-templatization
+	@test "$(filter $(LANGUAGE),nodejs)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs" && exit 1)
+	chainsaw test scenarios/url-templatization/test \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
 
 # Assumes a kind cluster with Odigos already installed at the version under test.
 # Usage: make test-head-sampling-grpc LANGUAGE=nodejs

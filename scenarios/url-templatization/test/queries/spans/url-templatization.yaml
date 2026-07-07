@@ -1,0 +1,387 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Spans from url-templatization deployment (default URL templatization enabled).
+  Covers call-endpoints.sh framework + plain-http routes (curl job; 400/401 local-only).
+serviceName: url-templatization
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: url-templatization
+  k8s.deployment.name: url-templatization
+  k8s.namespace.name: nodejs-url-templatization
+spans:
+
+  - id: framework-default
+    description: |
+      GET /http-framework/default
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default
+    expected:
+      minimum: 1
+  - id: framework-static-1
+    description: |
+      GET /http-framework/default/static/a
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/static/a
+    expected:
+      minimum: 1
+  - id: framework-static-2
+    description: |
+      GET /http-framework/default/static/a/b
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/static/a/b
+    expected:
+      minimum: 1
+  - id: framework-static-3
+    description: |
+      GET /http-framework/default/static/a/b/c
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/static/a/b/c
+    expected:
+      minimum: 1
+  - id: framework-templated-1
+    description: |
+      GET /http-framework/default/templated/1/foo
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/templated/1/:seg1
+      http.target: /http-framework/default/templated/1/foo
+    expected:
+      minimum: 1
+  - id: framework-templated-2
+    description: |
+      GET /http-framework/default/templated/2/foo/bar
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/templated/2/:seg1/:seg2
+      http.target: /http-framework/default/templated/2/foo/bar
+    expected:
+      minimum: 1
+  - id: framework-templated-3
+    description: |
+      GET /http-framework/default/templated/3/foo/bar/baz
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/templated/3/:seg1/:seg2/:seg3
+      http.target: /http-framework/default/templated/3/foo/bar/baz
+    expected:
+      minimum: 1
+  - id: framework-outbound-static
+    description: |
+      GET /http-framework/default/outbound/static
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/static
+      http.target: /http-framework/default/outbound/static
+    expected:
+      minimum: 1
+  - id: framework-outbound-templated
+    description: |
+      GET /http-framework/default/outbound/templated
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/templated
+      http.target: /http-framework/default/outbound/templated
+    expected:
+      minimum: 1
+  - id: framework-outbound-all
+    description: |
+      GET /http-framework/default/outbound/all
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/all
+      http.target: /http-framework/default/outbound/all
+    expected:
+      minimum: 1
+  - id: framework-outbound-static-1
+    description: |
+      GET /http-framework/default/outbound/static/1
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/static/:depth
+      http.target: /http-framework/default/outbound/static/1
+    expected:
+      minimum: 1
+  - id: framework-outbound-templated-1
+    description: |
+      GET /http-framework/default/outbound/templated/1
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/templated/:depth
+      http.target: /http-framework/default/outbound/templated/1
+    expected:
+      minimum: 1
+  - id: framework-outbound-static-2
+    description: |
+      GET /http-framework/default/outbound/static/2
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/static/:depth
+      http.target: /http-framework/default/outbound/static/2
+    expected:
+      minimum: 1
+  - id: framework-outbound-templated-2
+    description: |
+      GET /http-framework/default/outbound/templated/2
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/templated/:depth
+      http.target: /http-framework/default/outbound/templated/2
+    expected:
+      minimum: 1
+  - id: framework-outbound-static-3
+    description: |
+      GET /http-framework/default/outbound/static/3
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/static/:depth
+      http.target: /http-framework/default/outbound/static/3
+    expected:
+      minimum: 1
+  - id: framework-outbound-templated-3
+    description: |
+      GET /http-framework/default/outbound/templated/3
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/outbound/templated/:depth
+      http.target: /http-framework/default/outbound/templated/3
+    expected:
+      minimum: 1
+  - id: framework-error-404
+    description: |
+      GET /http-framework/default/errors/404 (expect 404)
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/errors/404
+      http.target: /http-framework/default/errors/404
+    expected:
+      minimum: 1
+  - id: framework-error-500
+    description: |
+      GET /http-framework/default/errors/500 (expect 500)
+    kind: server
+    spanAttributes:
+      http.route: /http-framework/default/errors/500
+      http.target: /http-framework/default/errors/500
+    expected:
+      minimum: 1
+  - id: plain-default
+    description: |
+      GET /plain-http/default
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default
+      http.target: /plain-http/default
+    expected:
+      minimum: 1
+  - id: plain-static-1
+    description: |
+      GET /plain-http/default/static/a
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/static/a
+      http.target: /plain-http/default/static/a
+    expected:
+      minimum: 1
+  - id: plain-static-2
+    description: |
+      GET /plain-http/default/static/a/b
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/static/a/b
+      http.target: /plain-http/default/static/a/b
+    expected:
+      minimum: 1
+  - id: plain-static-3
+    description: |
+      GET /plain-http/default/static/a/b/c
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/static/a/b/c
+      http.target: /plain-http/default/static/a/b/c
+    expected:
+      minimum: 1
+  - id: plain-templated-1
+    description: |
+      GET /plain-http/default/templated/1/foo
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/templated/{id}/foo
+      http.target: /plain-http/default/templated/1/foo
+    expected:
+      minimum: 1
+  - id: plain-templated-2
+    description: |
+      GET /plain-http/default/templated/2/foo/bar
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/templated/{id}/foo/bar
+      http.target: /plain-http/default/templated/2/foo/bar
+    expected:
+      minimum: 1
+  - id: plain-templated-3
+    description: |
+      GET /plain-http/default/templated/3/foo/bar/baz
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/templated/{id}/foo/bar/baz
+      http.target: /plain-http/default/templated/3/foo/bar/baz
+    expected:
+      minimum: 1
+  - id: plain-outbound-static
+    description: |
+      GET /plain-http/default/outbound/static
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/outbound/static
+      http.target: /plain-http/default/outbound/static
+    expected:
+      minimum: 1
+  - id: plain-outbound-templated
+    description: |
+      GET /plain-http/default/outbound/templated
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/outbound/templated
+      http.target: /plain-http/default/outbound/templated
+    expected:
+      minimum: 1
+  - id: plain-outbound-all
+    description: |
+      GET /plain-http/default/outbound/all
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/outbound/all
+      http.target: /plain-http/default/outbound/all
+    expected:
+      minimum: 1
+  - id: plain-error-404
+    description: |
+      GET /plain-http/default/errors/404 (expect 404)
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/errors/{id}
+      http.target: /plain-http/default/errors/404
+    expected:
+      minimum: 1
+  - id: plain-error-500
+    description: |
+      GET /plain-http/default/errors/500 (expect 500)
+    kind: server
+    spanAttributes:
+      http.route: /plain-http/default/errors/{id}
+      http.target: /plain-http/default/errors/500
+    expected:
+      minimum: 1
+  - id: client-framework-static-a
+    description: |
+      outbound client GET /http-framework/default/static/a
+    kind: client
+    spanAttributes:
+      url.path: /http-framework/default/static/a
+      url.template: /http-framework/default/static/a
+    expected:
+      minimum: 1
+  - id: client-framework-static-ab
+    description: |
+      outbound client GET /http-framework/default/static/a/b
+    kind: client
+    spanAttributes:
+      url.path: /http-framework/default/static/a/b
+      url.template: /http-framework/default/static/a/b
+    expected:
+      minimum: 1
+  - id: client-framework-static-abc
+    description: |
+      outbound client GET /http-framework/default/static/a/b/c
+    kind: client
+    spanAttributes:
+      url.path: /http-framework/default/static/a/b/c
+      url.template: /http-framework/default/static/a/b/c
+    expected:
+      minimum: 1
+  - id: client-framework-templated-1
+    description: |
+      outbound client GET /http-framework/default/templated/1/foo
+    kind: client
+    spanAttributes:
+      url.path: /http-framework/default/templated/1/foo
+      url.template: /http-framework/default/templated/{id}/foo
+    expected:
+      minimum: 1
+  - id: client-framework-templated-2
+    description: |
+      outbound client GET /http-framework/default/templated/2/foo/bar
+    kind: client
+    spanAttributes:
+      url.path: /http-framework/default/templated/2/foo/bar
+      url.template: /http-framework/default/templated/{id}/foo/bar
+    expected:
+      minimum: 1
+  - id: client-framework-templated-3
+    description: |
+      outbound client GET /http-framework/default/templated/3/foo/bar/baz
+    kind: client
+    spanAttributes:
+      url.path: /http-framework/default/templated/3/foo/bar/baz
+      url.template: /http-framework/default/templated/{id}/foo/bar/baz
+    expected:
+      minimum: 1
+  - id: client-plain-static-a
+    description: |
+      outbound client GET /plain-http/default/static/a
+    kind: client
+    spanAttributes:
+      url.path: /plain-http/default/static/a
+      url.template: /plain-http/default/static/a
+    expected:
+      minimum: 1
+  - id: client-plain-static-ab
+    description: |
+      outbound client GET /plain-http/default/static/a/b
+    kind: client
+    spanAttributes:
+      url.path: /plain-http/default/static/a/b
+      url.template: /plain-http/default/static/a/b
+    expected:
+      minimum: 1
+  - id: client-plain-static-abc
+    description: |
+      outbound client GET /plain-http/default/static/a/b/c
+    kind: client
+    spanAttributes:
+      url.path: /plain-http/default/static/a/b/c
+      url.template: /plain-http/default/static/a/b/c
+    expected:
+      minimum: 1
+  - id: client-plain-templated-1
+    description: |
+      outbound client GET /plain-http/default/templated/1/foo
+    kind: client
+    spanAttributes:
+      url.path: /plain-http/default/templated/1/foo
+      url.template: /plain-http/default/templated/{id}/foo
+    expected:
+      minimum: 1
+  - id: client-plain-templated-2
+    description: |
+      outbound client GET /plain-http/default/templated/2/foo/bar
+    kind: client
+    spanAttributes:
+      url.path: /plain-http/default/templated/2/foo/bar
+      url.template: /plain-http/default/templated/{id}/foo/bar
+    expected:
+      minimum: 1
+  - id: client-plain-templated-3
+    description: |
+      outbound client GET /plain-http/default/templated/3/foo/bar/baz
+    kind: client
+    spanAttributes:
+      url.path: /plain-http/default/templated/3/foo/bar/baz
+      url.template: /plain-http/default/templated/{id}/foo/bar/baz
+    expected:
+      minimum: 1
