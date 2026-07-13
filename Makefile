@@ -19,11 +19,6 @@ check-chainsaw:
 		exit 1; \
 	}
 
-test-runtime-version: check-chainsaw
-	kind delete cluster --name test-versions
-	kind create cluster --name test-versions --config tests/kind-config.yaml
-	chainsaw test tests/runtime-version
-
 # Assumes a kind cluster with Odigos already installed at the version under test.
 # Usage: make test-tail-sampling LANGUAGE=nodejs|python|java
 # Usage: make test-tail-sampling LANGUAGE=java OTEL_DISTRO_NAME=opentelemetry-ebpf-instrumentation

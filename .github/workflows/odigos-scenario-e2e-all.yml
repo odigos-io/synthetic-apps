@@ -1,18 +1,38 @@
 name: Odigos Scenario E2E (All)
 
 on:
+  schedule:
+    - cron: '*/10 * * * *'
   workflow_dispatch:
     inputs:
       odigos_version:
         description: 'Odigos version to install (e.g. v1.29.2 or v1.30.0-pre2 or v1.31.0-rc1)'
-        required: true
+        required: false
         type: string
 
 env:
   DEPOT_REGISTRY: p0xd21zf5r.registry.depot.dev
 
 jobs:
+  resolve-odigos-version:
+    runs-on: depot-ubuntu-latest
+    outputs:
+      odigos_version: ${{ steps.resolve.outputs.odigos_version }}
+    steps:
+      - id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ inputs.odigos_version }}" ]; then
+            VERSION="${{ inputs.odigos_version }}"
+          else
+            VERSION=$(gh api repos/odigos-io/odigos/releases/latest --jq .tag_name)
+          fi
+          echo "odigos_version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Using Odigos version: ${VERSION}"
+
   scenario-e2e:
+    needs: resolve-odigos-version
     runs-on: depot-ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -123,7 +143,7 @@ jobs:
 
       - uses: ./.github/actions/odigos-scenario-e2e
         with:
-          odigos_version: ${{ inputs.odigos_version }}
+          odigos_version: ${{ needs.resolve-odigos-version.outputs.odigos_version }}
           scenario: ${{ matrix.scenario }}
           languages: ${{ matrix.language }}
           tier: ${{ matrix.tier }}
