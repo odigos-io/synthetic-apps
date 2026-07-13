@@ -23,12 +23,3 @@ spans:
       http.route: /static/success
     expected:
       minimum: 1
-
-  - id: versionminimumlegacy
-    description: GET /static/success on versionminimumlegacy deployment (legacy agent, Node.js 14)
-    serviceName: versionminimumlegacy
-    kind: server
-    spanAttributes:
-      http.route: /static/success
-    expected:
-      minimum: 1
