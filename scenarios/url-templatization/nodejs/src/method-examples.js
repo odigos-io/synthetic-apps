@@ -5,25 +5,25 @@ var routes = {
     id: 'custom-rule',
     path: PREFIX + '/custom-rule/items/widget',
     description:
-      'Custom templatization rule matches widget segment; expect odigos.url_templatization.method=custom_rule.',
+      'Custom templatization rule matches widget segment; expect odigos.url_templatization.result=custom_rule.',
   },
   defaultHeuristic: {
     id: 'default-heuristic',
     path: PREFIX + '/default-heuristic/orders/1234567',
     description:
-      'Long numeric segment triggers default heuristic; expect odigos.url_templatization.method=default_heuristic.',
+      'Long numeric segment triggers default heuristic; expect odigos.url_templatization.result=default_heuristic.',
   },
   unchanged: {
     id: 'unchanged',
     path: PREFIX + '/unchanged/catalog/widgets/tools',
     description:
-      'All static segments left unchanged; expect odigos.url_templatization.method=unchanged.',
+      'All static segments left unchanged; expect odigos.url_templatization.result=static_path.',
   },
   pathNormalization: {
     id: 'path-normalization',
     rawUrls: ['//', '///'],
     description:
-      'Raw all-slash URL normalizes to /; expect odigos.url_templatization.method=path_normalization.',
+      'Raw all-slash URL normalizes to /; expect odigos.url_templatization.result=path_normalization.',
   },
 };
 
