@@ -1,0 +1,5 @@
+apiVersion: v2
+name: odigos-sources
+description: Odigos Source manifests for rollout scenarios
+type: application
+version: 0.1.0

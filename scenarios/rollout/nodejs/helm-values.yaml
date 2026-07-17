@@ -1,0 +1,4 @@
+namespace: nodejs-rollout
+sources:
+  - name: instrument-no-pods
+    workload: no-pods
