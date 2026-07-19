@@ -1,0 +1,52 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: in-rollout
+  labels:
+    app: in-rollout
+spec:
+  replicas: 1
+  # Keep Progressing while instrumented pods intentionally fail readiness,
+  # so the workload stays in an ongoing rolling update for observation.
+  progressDeadlineSeconds: 2147483647
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: in-rollout
+  template:
+    metadata:
+      labels:
+        app: in-rollout
+    spec:
+      containers:
+        - name: in-rollout
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-rollout
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: FAIL_READY_WHEN_INSTRUMENTED
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 2147483647
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: in-rollout
+spec:
+  selector:
+    app: in-rollout
+  ports:
+    - protocol: TCP
+      port: 8080

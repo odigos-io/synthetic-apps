@@ -1,0 +1,155 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: rollout-auto-rollout-disabled
+spec:
+  description: |
+    E2E test for Odigos behavior when automatic rollout is disabled in global config.
+    Mutates odigos-local-ui-config (rollout.automaticRolloutDisabled: true), so this
+    test must not run in parallel with other rollout tests.
+    Cleans the rollout namespace before running; this test only deploys auto-rollout-disabled.
+    Prerequisites: a kind cluster with Odigos already installed at the version under test.
+    Configure the language under test via --values (e.g. make test-rollout LANGUAGE=nodejs).
+  concurrent: false
+  skipDelete: true
+  bindings:
+    - name: tests_namespace
+      value: (join('-', [$values.language, 'rollout']))
+  steps:
+
+    - name: Clean leftovers
+      try:
+        - script:
+            timeout: 1m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" clean NAMESPACE="${TESTS_NAMESPACE}"
+
+    - name: Ensure namespace
+      try:
+        - script:
+            workDir: ../../../../
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
+
+    - name: Disable automatic rollout
+      try:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-automatic-rollout-disabled AUTOMATIC_ROLLOUT_DISABLED=true
+
+    - name: Apply nop destination
+      try:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" apply-nop-destination
+
+    - name: Deploy auto-rollout-disabled workload
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              if [ ! -d "${app_dir}/deployments/auto-rollout-disabled" ]; then
+                echo "language ${LANGUAGE} does not support rollout auto-rollout-disabled"
+                exit 1
+              fi
+
+              kubectl get namespace odigos-system >/dev/null
+              cd "${app_dir}"
+              if [ -z "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make build load-to-kind
+              fi
+              # Apply workload first (no Source) so an uninstrumented Ready pod exists,
+              # then mark for instrumentation. With auto rollout disabled, pods stay as-is.
+              make apply-workload DEPLOYMENT=auto-rollout-disabled NAMESPACE="${TESTS_NAMESPACE}"
+              kubectl wait --for=condition=available deployment/auto-rollout-disabled \
+                -n "${TESTS_NAMESPACE}" --timeout=120s
+              kubectl apply -f deployments/auto-rollout-disabled/odigos-instrument.yaml
+      catch:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              echo "=== deployments in ${TESTS_NAMESPACE} ==="
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o wide
+              echo "=== pods in ${TESTS_NAMESPACE} ==="
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              echo "=== sources in ${TESTS_NAMESPACE} ==="
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== instrumentationconfigs in ${TESTS_NAMESPACE} ==="
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== odigos-local-ui-config ==="
+              kubectl get configmap odigos-local-ui-config -n odigos-system -o yaml || true
+              echo "=== effective-config rollout ==="
+              kubectl get configmap effective-config -n odigos-system -o yaml || true
+              echo "=== recent events in ${TESTS_NAMESPACE} ==="
+              kubectl get events -n "$TESTS_NAMESPACE" --sort-by='.lastTimestamp' | tail -30
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-automatic-rollout-disabled AUTOMATIC_ROLLOUT_DISABLED=false
+
+    - name: Assert Instrumentation Config Auto Rollout Disabled
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/ic-conditions.yaml
+            template: true
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get configmap odigos-local-ui-config -n odigos-system -o yaml || true
+              kubectl get configmap effective-config -n odigos-system -o yaml || true
+      finally:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-automatic-rollout-disabled AUTOMATIC_ROLLOUT_DISABLED=false

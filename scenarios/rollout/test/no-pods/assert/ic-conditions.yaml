@@ -1,0 +1,13 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-no-pods
+  namespace: (join('-', [$values.language, 'rollout']))
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: no-pods
+status:
+  (conditions[?type == 'PodsManifestInjection']):
+    - reason: NoPods
+      message: ""

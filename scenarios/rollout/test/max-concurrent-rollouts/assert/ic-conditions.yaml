@@ -1,0 +1,25 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-blocking-rollout
+  namespace: (join('-', [$values.language, 'rollout']))
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: blocking-rollout
+status:
+  (conditions[?type == 'PodsManifestInjection']):
+    - reason: RolloutInProgress_Enabled
+---
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-queued-rollout
+  namespace: (join('-', [$values.language, 'rollout']))
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: queued-rollout
+status:
+  (conditions[?type == 'PodsManifestInjection']):
+    - reason: WaitingInRolloutQueue_Enabled

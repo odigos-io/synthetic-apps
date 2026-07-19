@@ -1,0 +1,220 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: rollout-max-concurrent-rollouts
+spec:
+  description: |
+    E2E test for Odigos concurrent rollout limiting (maxConcurrentRollouts: 1).
+    One deployment never completes its rollout (occupies the single slot); a second
+    deployment is then instrumented and should wait in the rollout queue.
+    Mutates odigos-local-ui-config, so this test must not run in parallel with other
+    rollout tests that change global rollout config.
+    Cleans the rollout namespace before running; this test only deploys
+    blocking-rollout and queued-rollout.
+    Prerequisites: a kind cluster with Odigos already installed at the version under test.
+    Configure the language under test via --values (e.g. make test-rollout LANGUAGE=nodejs).
+  concurrent: false
+  skipDelete: true
+  bindings:
+    - name: tests_namespace
+      value: (join('-', [$values.language, 'rollout']))
+  steps:
+
+    - name: Clean leftovers
+      try:
+        - script:
+            timeout: 1m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" clean NAMESPACE="${TESTS_NAMESPACE}"
+
+    - name: Ensure namespace
+      try:
+        - script:
+            workDir: ../../../../
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
+
+    - name: Limit concurrent rollouts to 1
+      try:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-max-concurrent-rollouts MAX_CONCURRENT_ROLLOUTS=1
+
+    - name: Apply nop destination
+      try:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" apply-nop-destination
+
+    - name: Deploy blocking rollout workload
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              if [ ! -d "${app_dir}/deployments/blocking-rollout" ]; then
+                echo "language ${LANGUAGE} does not support rollout blocking-rollout"
+                exit 1
+              fi
+
+              kubectl get namespace odigos-system >/dev/null
+              cd "${app_dir}"
+              if [ -z "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make build load-to-kind
+              fi
+              # Apply workload first (no Source) so an uninstrumented Ready pod exists,
+              # then mark for instrumentation to start a rolling update that never completes.
+              make apply-workload DEPLOYMENT=blocking-rollout NAMESPACE="${TESTS_NAMESPACE}"
+              kubectl wait --for=condition=available deployment/blocking-rollout \
+                -n "${TESTS_NAMESPACE}" --timeout=120s
+              kubectl apply -f deployments/blocking-rollout/odigos-instrument.yaml
+      catch:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              echo "=== deployments in ${TESTS_NAMESPACE} ==="
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o wide
+              echo "=== pods in ${TESTS_NAMESPACE} ==="
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              echo "=== sources in ${TESTS_NAMESPACE} ==="
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== instrumentationconfigs in ${TESTS_NAMESPACE} ==="
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== odigos-local-ui-config ==="
+              kubectl get configmap odigos-local-ui-config -n odigos-system -o yaml || true
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-max-concurrent-rollouts MAX_CONCURRENT_ROLLOUTS=0
+
+    - name: Assert blocking rollout occupies concurrent slot
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/ic-conditions-blocking.yaml
+            template: true
+      catch:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-max-concurrent-rollouts MAX_CONCURRENT_ROLLOUTS=0
+
+    - name: Deploy queued rollout workload
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              if [ ! -d "${app_dir}/deployments/queued-rollout" ]; then
+                echo "language ${LANGUAGE} does not support rollout queued-rollout"
+                exit 1
+              fi
+
+              cd "${app_dir}"
+              # Apply workload first so it is Ready, then instrument so it joins
+              # the rollout queue behind the blocking deployment.
+              make apply-workload DEPLOYMENT=queued-rollout NAMESPACE="${TESTS_NAMESPACE}"
+              kubectl wait --for=condition=available deployment/queued-rollout \
+                -n "${TESTS_NAMESPACE}" --timeout=120s
+              kubectl apply -f deployments/queued-rollout/odigos-instrument.yaml
+      catch:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              echo "=== deployments in ${TESTS_NAMESPACE} ==="
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o wide
+              echo "=== pods in ${TESTS_NAMESPACE} ==="
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              echo "=== sources in ${TESTS_NAMESPACE} ==="
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== instrumentationconfigs in ${TESTS_NAMESPACE} ==="
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-max-concurrent-rollouts MAX_CONCURRENT_ROLLOUTS=0
+
+    - name: Assert Instrumentation Config Concurrent Rollout Queue
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/ic-conditions.yaml
+            template: true
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get configmap odigos-local-ui-config -n odigos-system -o yaml || true
+              kubectl get configmap effective-config -n odigos-system -o yaml || true
+      finally:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" set-max-concurrent-rollouts MAX_CONCURRENT_ROLLOUTS=0

@@ -1,0 +1,33 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: auto-rollout-disabled
+  labels:
+    app: auto-rollout-disabled
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auto-rollout-disabled
+  template:
+    metadata:
+      labels:
+        app: auto-rollout-disabled
+    spec:
+      containers:
+        - name: auto-rollout-disabled
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:nodejs-rollout
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: auto-rollout-disabled
+spec:
+  selector:
+    app: auto-rollout-disabled
+  ports:
+    - protocol: TCP
+      port: 8080

@@ -1,0 +1,154 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: rollout-no-pods
+spec:
+  description: |
+    E2E test for Odigos behavior with a marked Source on a Deployment that has 0 replicas.
+    Cleans the rollout namespace before running; this test only deploys no-pods.
+    Prerequisites: a kind cluster with Odigos already installed at the version under test.
+    Configure the language under test via --values (e.g. make test-rollout LANGUAGE=nodejs).
+  concurrent: false
+  skipDelete: true
+  bindings:
+    - name: tests_namespace
+      value: (join('-', [$values.language, 'rollout']))
+  steps:
+
+    - name: Clean leftovers
+      try:
+        - script:
+            timeout: 1m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" clean NAMESPACE="${TESTS_NAMESPACE}"
+
+    - name: Ensure namespace
+      try:
+        - script:
+            workDir: ../../../../
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
+
+    - name: Apply nop destination
+      try:
+        - script:
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" apply-nop-destination
+
+    - name: Deploy no-pods
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              if [ ! -d "${app_dir}/deployments/no-pods" ]; then
+                echo "language ${LANGUAGE} does not support rollout no-pods (no deployments/no-pods)"
+                exit 1
+              fi
+
+              kubectl get namespace odigos-system >/dev/null
+              cd "${app_dir}"
+              if [ -z "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make build load-to-kind
+              fi
+              make apply-deployment DEPLOYMENT=no-pods NAMESPACE="${TESTS_NAMESPACE}"
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              echo "=== deployments in ${TESTS_NAMESPACE} ==="
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o wide
+              echo "=== sources in ${TESTS_NAMESPACE} ==="
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== instrumentationconfigs in ${TESTS_NAMESPACE} ==="
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              echo "=== recent events in ${TESTS_NAMESPACE} ==="
+              kubectl get events -n "$TESTS_NAMESPACE" --sort-by='.lastTimestamp' | tail -30
+
+    - name: Assert Instrumentation Config Conditions
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/ic-conditions.yaml
+            template: true
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get sources -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get destinations -n odigos-system -o yaml
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml
+
+    - name: Scale up no-pods
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              app_dir="$(cd ../.. && pwd)/${LANGUAGE}"
+              make -C "${app_dir}" no-pods-scale-up NAMESPACE="${TESTS_NAMESPACE}"
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o wide
+              kubectl get pods -n "$TESTS_NAMESPACE" -o wide
+              kubectl get events -n "$TESTS_NAMESPACE" --sort-by='.lastTimestamp' | tail -30
+
+    - name: Assert Instrumentation Config Conditions After Scale Up
+      try:
+        - assert:
+            timeout: 2m
+            file: ./assert/ic-conditions-after-scale-up.yaml
+            template: true
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get instrumentationconfig -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get pods -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get deployments -n "$TESTS_NAMESPACE" -o yaml

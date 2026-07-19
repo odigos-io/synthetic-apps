@@ -1,0 +1,13 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-in-rollout
+  namespace: (join('-', [$values.language, 'rollout']))
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: in-rollout
+status:
+  (conditions[?type == 'PodsManifestInjection']):
+    - status: Unknown
+      reason: RolloutInProgress_Enabled

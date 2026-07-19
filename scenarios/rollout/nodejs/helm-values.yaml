@@ -2,3 +2,11 @@ namespace: nodejs-rollout
 sources:
   - name: instrument-no-pods
     workload: no-pods
+  - name: instrument-in-rollout
+    workload: in-rollout
+  - name: instrument-auto-rollout-disabled
+    workload: auto-rollout-disabled
+  - name: instrument-blocking-rollout
+    workload: blocking-rollout
+  - name: instrument-queued-rollout
+    workload: queued-rollout

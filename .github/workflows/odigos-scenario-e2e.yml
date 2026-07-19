@@ -17,6 +17,7 @@ on:
           - head-sampling-grpc
           - runtime-versions
           - url-templatization
+          - rollout
       languages:
         description: 'Comma-separated languages (nodejs, python, java, golang)'
         required: true

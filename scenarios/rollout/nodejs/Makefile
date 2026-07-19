@@ -1,4 +1,5 @@
 NAMESPACE ?= nodejs-rollout
+DEPLOYMENTS := no-pods in-rollout auto-rollout-disabled blocking-rollout queued-rollout
 
 include ../../../depot.mk
 include ../scenario.mk
@@ -13,10 +14,24 @@ build:
 load-to-kind:
 	kind load docker-image $(IMAGE)
 
+.PHONY: apply-workload
+apply-workload: ensure-namespace
+ifndef DEPLOYMENT
+	$(error DEPLOYMENT is required (e.g. DEPLOYMENT=in-rollout))
+endif
+	kubectl apply -n $(NAMESPACE) -f deployments/$(DEPLOYMENT)/k8s.yaml
+
+.PHONY: apply-deployment
+apply-deployment: ensure-namespace
+ifndef DEPLOYMENT
+	$(error DEPLOYMENT is required (e.g. DEPLOYMENT=no-pods))
+endif
+	$(MAKE) apply-workload DEPLOYMENT=$(DEPLOYMENT) NAMESPACE=$(NAMESPACE)
+	kubectl apply -f deployments/$(DEPLOYMENT)/odigos-instrument.yaml
+
 .PHONY: apply
 apply: ensure-namespace
-	kubectl apply -n $(NAMESPACE) -f deployments/no-pods/k8s.yaml
-	$(MAKE) apply-odigos-sources
+	@$(foreach d,$(DEPLOYMENTS),$(MAKE) apply-deployment DEPLOYMENT=$(d);)
 
 .PHONY: apply-nop-destination
 apply-nop-destination:

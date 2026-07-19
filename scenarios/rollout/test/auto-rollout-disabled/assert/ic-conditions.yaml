@@ -1,0 +1,12 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationConfig
+metadata:
+  name: deployment-auto-rollout-disabled
+  namespace: (join('-', [$values.language, 'rollout']))
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: auto-rollout-disabled
+status:
+  (conditions[?type == 'PodsManifestInjection']):
+    - reason: RestartRequiredAutoRolloutDisabled_Enabled

@@ -1,6 +1,6 @@
 include depot.mk
 
-.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http
+.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http test-rollout
 
 check-chainsaw:
 	@command -v chainsaw >/dev/null 2>&1 || { \
@@ -67,3 +67,12 @@ test-head-sampling-grpc: check-chainsaw
 	else \
 		chainsaw test tests/head-sampling-grpc --set-string language=$(LANGUAGE); \
 	fi
+
+# Usage: make test-rollout LANGUAGE=nodejs
+# Assumes a kind cluster with Odigos already installed at the version under test.
+test-rollout: check-chainsaw
+	@test "$(filter $(LANGUAGE),nodejs)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs" && exit 1)
+	chainsaw test scenarios/rollout/test \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)

@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-auto-rollout-disabled
+  namespace: nodejs-rollout
+spec:
+  workload:
+    kind: Deployment
+    name: auto-rollout-disabled
+    namespace: nodejs-rollout
