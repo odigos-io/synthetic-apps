@@ -1,0 +1,14 @@
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: pii-masking
+  namespace: odigos-system
+spec:
+  signals:
+    - TRACES
+  piiMasking:
+    piiCategories:
+      - CREDIT_CARD
+      - EMAIL
+      - JWT
+      - UUID

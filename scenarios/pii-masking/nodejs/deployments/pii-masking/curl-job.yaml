@@ -1,0 +1,64 @@
+# One-off Job: POSTs sample PII payloads to /echo for masking assertions.
+# Trigger with: make trigger (from scenarios/pii-masking/nodejs)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pii-masking-curls
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: pii-masking-curls
+        odigos.io/test-infra: "true"
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://pii-masking:8080"
+              echo "BASE_URL=$${BASE_URL}"
+
+              JWT='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'
+
+              post_echo() {
+                path="$$1"
+                payload="$$2"
+                shift 2
+                echo "POST $${BASE_URL}$${path}"
+                echo "payload=$${payload}"
+                response="$$(curl -sS -f -X POST "$${BASE_URL}$${path}" \
+                  -H 'Content-Type: application/json' \
+                  "$@" \
+                  -d "$${payload}")"
+                echo "response=$${response}"
+              }
+
+              echo "GET $${BASE_URL}/healthz"
+              curl -sS -f -o /dev/null "$${BASE_URL}/healthz"
+
+              # CreditCardMasking: Visa + MasterCard
+              post_echo "/echo/credit-card" '{"visa":"4111111111111111","mastercard":"5555555555554444"}'
+
+              # EmailMasking
+              post_echo "/echo/email" '{"email":"user@example.com"}'
+
+              # JwtMasking (request body)
+              post_echo "/echo/jwt" "{\"token\":\"$${JWT}\"}"
+
+              # JwtMasking (collected request header x-jwt)
+              post_echo "/echo/jwt-header" '{}' -H "x-jwt: $${JWT}"
+
+              # UuidMasking
+              post_echo "/echo/uuid" '{"id":"550e8400-e29b-41d4-a716-446655440000"}'
+
+              echo "all curls succeeded"

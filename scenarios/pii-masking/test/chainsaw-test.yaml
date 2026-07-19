@@ -1,0 +1,160 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pii-masking
+spec:
+  description: |
+    E2E tests for Odigos PII masking on collected HTTP request payloads (nodejs).
+    Prerequisites: a kind cluster with Odigos already installed at the version under test.
+    Usage: make test-pii-masking LANGUAGE=nodejs
+  skipDelete: true
+  bindings:
+    - name: tests_namespace
+      value: (join('-', [$values.language, 'pii-masking']))
+  steps:
+
+    - name: Create Tests Namespace
+      try:
+        - script:
+            workDir: ../../../
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+            content: |
+              make ensure-namespace NAMESPACE="$TESTS_NAMESPACE" DEPOT_SYNTHTIC_APPS_PULL_TOKEN="$DEPOT_SYNTHTIC_APPS_PULL_TOKEN"
+
+    - name: Install Simple Trace Db
+      try:
+        - apply:
+            file: ../../../tests/common/apply/simple-trace-db-deployment.yaml
+            template: true
+
+    - name: Add Destination
+      try:
+        - apply:
+            file: ./apply/simple-trace-db-destination.yaml
+            template: true
+
+    - name: deploy test application
+      try:
+        - script:
+            timeout: 5m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+              - name: DEPOT_SYNTHTIC_APPS_PULL_TOKEN
+                value: ($values.depot_pull_token)
+              - name: OTEL_DISTRO_NAME
+                value: ($values.otel_distro_name)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
+              if [ ! -d "${app_dir}" ]; then
+                echo "unknown language: ${LANGUAGE} (expected ${app_dir})"
+                exit 1
+              fi
+
+              kubectl get namespace odigos-system >/dev/null
+              echo "deploying pii-masking app from ${app_dir} into ${TESTS_NAMESPACE}"
+              if [ -n "${OTEL_DISTRO_NAME:-}" ]; then
+                echo "using otel distro override: ${OTEL_DISTRO_NAME}"
+              fi
+              cd "${app_dir}"
+              if [ -n "${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-}" ]; then
+                make apply NAMESPACE="${TESTS_NAMESPACE}" OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
+                make rollout NAMESPACE="${TESTS_NAMESPACE}"
+              else
+                make deploy NAMESPACE="${TESTS_NAMESPACE}" OTEL_DISTRO_NAME="${OTEL_DISTRO_NAME:-}"
+              fi
+
+    - name: apply data streams to sources
+      try:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              ../../../tests/common/apply/apply-data-stream-to-sources.sh
+
+    - name: wait for pods to be instrumented
+      try:
+        - script:
+            timeout: 5m
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              export NAMESPACE="$TESTS_NAMESPACE"
+              ../../../tests/common/assert/wait-for-pods-instrumented.sh
+      catch:
+        - script:
+            env:
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              kubectl get pods -n "$TESTS_NAMESPACE" -o yaml
+              kubectl get sources,instrumentationconfig -n "$TESTS_NAMESPACE"
+
+    - name: wait for simple trace db
+      try:
+        - script:
+            timeout: 2m
+            env:
+              - name: TRACE_NAMESPACE
+                value: ($namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              kubectl wait --for=condition=available deployment/simple-trace-db -n "$TRACE_NAMESPACE" --timeout=120s
+
+    - name: trigger traffic
+      try:
+        - script:
+            timeout: 5m
+            env:
+              - name: LANGUAGE
+                value: ($values.language)
+              - name: TESTS_NAMESPACE
+                value: ($tests_namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+
+              app_dir="$(cd .. && pwd)/${LANGUAGE}"
+              cd "${app_dir}"
+              make trigger-pii-masking-curls NAMESPACE="${TESTS_NAMESPACE}"
+
+    - name: Assert expected spans
+      try:
+        - script:
+            timeout: 30s
+            env:
+              - name: TRACE_NAMESPACE
+                value: ($namespace)
+            content: |
+              #!/bin/bash
+              set -euo pipefail
+              deadline=$(($(date +%s) + 120))
+              while true; do
+                if ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/pii-masking.yaml "$TRACE_NAMESPACE" simple-trace-db; then
+                  exit 0
+                fi
+                if [[ $(date +%s) -ge deadline ]]; then
+                  echo "span assertions did not pass within 2m" >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+      catch:
+        - script:
+            env:
+              - name: TRACE_NAMESPACE
+                value: ($namespace)
+            content: |
+              ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/pii-masking.yaml --verbose "$TRACE_NAMESPACE" simple-trace-db

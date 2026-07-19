@@ -111,7 +111,7 @@ append_span_attribute_any_from_yq_path() {
       attr_key=$(jmes_map_key spanAttributes "$key")
       conditions+=("(${attr_key} != null && contains(${attr_key}, $(jmes_format_value "$value")))")
     fi
-  done < <(yq_read "$file" "$yq_path" "$field" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+  done < <(yq_map_entries "$file" "$yq_path" "$field")
 
   if ((${#conditions[@]} > 0)); then
     append_or_conditions "${conditions[@]}"
@@ -138,6 +138,14 @@ yq_read() {
   yq e "explode(.) | $(yq_subpath "$base" "$field")${expr}" "$file"
 }
 
+# Emit map entries as key<TAB>value without @tsv CSV-escaping (which doubles ").
+yq_map_entries() {
+  local file=$1
+  local base=$2
+  local field=$3
+  yq e -r "explode(.) | $(yq_subpath "$base" "$field") // {} | to_entries | .[] | .key + \"\t\" + (.value | tostring)" "$file"
+}
+
 append_resource_matchers_from_yq_path() {
   local file=$1
   local yq_path=$2
@@ -146,12 +154,12 @@ append_resource_matchers_from_yq_path() {
   while IFS=$'\t' read -r key value; do
     [[ -z "$key" ]] && continue
     append_condition "$(jmes_map_key resourceAttributes "$key") == $(jmes_format_value "$value")"
-  done < <(yq_read "$file" "$yq_path" "resourceAttributes" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+  done < <(yq_map_entries "$file" "$yq_path" "resourceAttributes")
 
   while IFS=$'\t' read -r key value; do
     [[ -z "$key" ]] && continue
     append_condition "ends_with($(jmes_map_key resourceAttributes "$key"), $(jmes_format_value "$value"))"
-  done < <(yq_read "$file" "$yq_path" "resourceAttributesEndsWith" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+  done < <(yq_map_entries "$file" "$yq_path" "resourceAttributesEndsWith")
 }
 
 append_span_field_matchers_from_yq_path() {
@@ -185,17 +193,20 @@ append_span_field_matchers_from_yq_path() {
   while IFS=$'\t' read -r key value; do
     [[ -z "$key" ]] && continue
     append_condition "$(jmes_map_key spanAttributes "$key") == $(jmes_format_value "$value")"
-  done < <(yq_read "$file" "$yq_path" "spanAttributes" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+  done < <(yq_map_entries "$file" "$yq_path" "spanAttributes")
 
   while IFS=$'\t' read -r key value; do
     [[ -z "$key" ]] && continue
     append_condition "ends_with($(jmes_map_key spanAttributes "$key"), $(jmes_format_value "$value"))"
-  done < <(yq_read "$file" "$yq_path" "spanAttributesEndsWith" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+  done < <(yq_map_entries "$file" "$yq_path" "spanAttributesEndsWith")
 
   while IFS=$'\t' read -r key value; do
     [[ -z "$key" ]] && continue
-    append_condition "contains($(jmes_map_key spanAttributes "$key"), $(jmes_format_value "$value"))"
-  done < <(yq_read "$file" "$yq_path" "spanAttributesContains" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+    # Null-safe: health probes and other spans often omit optional attributes.
+    # Bare contains(null, ...) errors in simple-trace-db's JMESPath runtime.
+    attr_key=$(jmes_map_key spanAttributes "$key")
+    append_condition "(${attr_key} != null && contains(${attr_key}, $(jmes_format_value "$value")))"
+  done < <(yq_map_entries "$file" "$yq_path" "spanAttributesContains")
 
   append_span_attribute_any_from_yq_path "$file" "$yq_path" "spanAttributesAny" "equals"
   append_span_attribute_any_from_yq_path "$file" "$yq_path" "spanAttributesContainsAny" "contains"
@@ -205,7 +216,7 @@ append_span_field_matchers_from_yq_path() {
     # Key must be missing from spanAttributes (not merely null/empty). Using keys()
     # avoids treating present booleans (e.g. trace.kept == false) as absent.
     append_condition "!contains(keys(spanAttributes), $(jmes_format_value "$key"))"
-  done < <(yq_read "$file" "$yq_path" "spanAttributesAbsent" ' // {} | to_entries | .[] | [.key, (.value | tostring)] | @tsv')
+  done < <(yq_map_entries "$file" "$yq_path" "spanAttributesAbsent")
 }
 
 append_root_span_matcher_from_yq_paths() {

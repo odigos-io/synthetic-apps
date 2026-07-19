@@ -1,0 +1,72 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Server spans from pii-masking /echo/* after the curl job POSTs credit-card, email,
+  JWT, and UUID payloads. PII Masking Action should replace sensitive values with ****
+  in http.request.payload, preserving the surrounding JSON key prefix.
+serviceName: pii-masking
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: pii-masking
+  k8s.deployment.name: pii-masking
+  k8s.namespace.name: nodejs-pii-masking
+spans:
+  - id: credit-card-visa-masked
+    description: |
+      POST /echo/credit-card — Visa number masked as "visa":"****"
+    kind: server
+    spanAttributes:
+      http.target: /echo/credit-card
+    spanAttributesContains:
+      http.request.payload: '"visa":"****"'
+    expected:
+      minimum: 1
+  - id: credit-card-mastercard-masked
+    description: |
+      POST /echo/credit-card — MasterCard number masked as "mastercard":"****"
+    kind: server
+    spanAttributes:
+      http.target: /echo/credit-card
+    spanAttributesContains:
+      http.request.payload: '"mastercard":"****"'
+    expected:
+      minimum: 1
+  - id: email-masked
+    description: |
+      POST /echo/email — email masked as "email":"****"
+    kind: server
+    spanAttributes:
+      http.target: /echo/email
+    spanAttributesContains:
+      http.request.payload: '"email":"****"'
+    expected:
+      minimum: 1
+  - id: jwt-masked
+    description: |
+      POST /echo/jwt — JWT masked as "token":"****"
+    kind: server
+    spanAttributes:
+      http.target: /echo/jwt
+    spanAttributesContains:
+      http.request.payload: '"token":"****"'
+    expected:
+      minimum: 1
+  - id: jwt-header-masked
+    description: |
+      POST /echo/jwt-header — JWT in collected x-jwt request header masked to ****
+    kind: server
+    spanAttributes:
+      http.target: /echo/jwt-header
+      http.request.header.x-jwt: '****'
+    expected:
+      minimum: 1
+  - id: uuid-masked
+    description: |
+      POST /echo/uuid — UUID masked as "id":"****"
+    kind: server
+    spanAttributes:
+      http.target: /echo/uuid
+    spanAttributesContains:
+      http.request.payload: '"id":"****"'
+    expected:
+      minimum: 1

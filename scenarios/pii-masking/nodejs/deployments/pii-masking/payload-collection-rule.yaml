@@ -1,0 +1,14 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationRule
+metadata:
+  name: pii-masking-payload-collection
+  namespace: odigos-system
+spec:
+  payloadCollection:
+    httpRequest: {}
+    httpResponse: {}
+    dbQuery: {}
+    messaging: {}
+  headersCollection:
+    headerKeys:
+      - x-jwt

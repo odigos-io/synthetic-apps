@@ -18,6 +18,7 @@ on:
           - runtime-versions
           - url-templatization
           - rollout
+          - pii-masking
       languages:
         description: 'Comma-separated languages (nodejs, python, java, golang)'
         required: true

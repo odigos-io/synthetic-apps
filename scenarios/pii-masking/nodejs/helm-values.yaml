@@ -1,0 +1,4 @@
+namespace: nodejs-pii-masking
+sources:
+  - name: instrument-pii-masking
+    workload: pii-masking

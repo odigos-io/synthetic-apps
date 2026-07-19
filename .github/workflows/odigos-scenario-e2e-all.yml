@@ -138,6 +138,12 @@ jobs:
             tier: enterprise
             language: nodejs
             otel_distro_name: 'nodejs-enterprise'
+
+          #### PII Masking ####
+          - scenario: pii-masking
+            tier: enterprise
+            language: nodejs
+            otel_distro_name: 'nodejs-enterprise'
     steps:
       - uses: actions/checkout@v7
 
