@@ -12,6 +12,7 @@ on:
       - 'scenarios/url-templatization/**'
       - 'scenarios/rollout/**'
       - 'scenarios/pii-masking/**'
+      - 'scenarios/sql-query/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -130,3 +131,13 @@ jobs:
           file: scenarios/pii-masking/nodejs/deployments/pii-masking/Dockerfile
           context: scenarios/pii-masking/nodejs
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-pii-masking
+
+      - name: Build and push golang-sql-query
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/sql-query/golang/deployments/sql-query/Dockerfile
+          context: scenarios/sql-query/golang
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:golang-sql-query

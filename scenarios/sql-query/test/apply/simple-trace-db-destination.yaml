@@ -1,0 +1,15 @@
+apiVersion: odigos.io/v1alpha1
+kind: Destination
+metadata:
+  name: (join('-', ['simple-trace-db', $values.language, 'sql-query']))
+  namespace: odigos-system
+spec:
+  data:
+    OTLP_HTTP_ENDPOINT: (join('', ['http://simple-trace-db.', $namespace, ':4318']))
+  destinationName: e2e-tests
+  signals:
+    - TRACES
+  type: otlphttp
+  sourceSelector:
+    dataStreams:
+      - ($tests_namespace)

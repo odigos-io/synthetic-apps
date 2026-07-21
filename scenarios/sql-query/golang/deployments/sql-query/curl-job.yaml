@@ -1,0 +1,54 @@
+# One-off Job: exercise plain (non-parameterized) Postgres SELECTs, including
+# queries padded so a ~256-char capture cuts mid-WHERE / mid-FROM / mid-table-name.
+# Trigger with: make trigger (from scenarios/sql-query/golang)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sql-query-curls
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: sql-query-curls
+        odigos.io/test-infra: "true"
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://sql-query:8080"
+              echo "BASE_URL=$${BASE_URL}"
+
+              echo "GET $${BASE_URL}/healthz"
+              curl -sS -f -o /dev/null "$${BASE_URL}/healthz"
+
+              echo "GET $${BASE_URL}/query"
+              response="$$(curl -sS -f "$${BASE_URL}/query")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'alice@example.com'
+
+              for path_marker in \
+                "query-truncate-where:status_filter_display_name" \
+                "query-truncate-from:shipment_source_lookup_key" \
+                "query-truncate-table:inventory_catalog_source_key"
+              do
+                path="$${path_marker%%:*}"
+                marker="$${path_marker##*:}"
+                echo "GET $${BASE_URL}/$${path}"
+                body="$$(curl -sS -f "$${BASE_URL}/$${path}")"
+                echo "response=$${body}"
+                echo "$${body}" | grep -q 'alice@example.com'
+                echo "$${body}" | grep -q "$${marker}"
+              done
+
+              echo "all curls succeeded"

@@ -1,6 +1,6 @@
 include depot.mk
 
-.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http test-rollout test-pii-masking
+.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http test-rollout test-pii-masking test-sql-query
 
 check-chainsaw:
 	@command -v chainsaw >/dev/null 2>&1 || { \
@@ -82,6 +82,15 @@ test-rollout: check-chainsaw
 test-pii-masking: check-chainsaw
 	@test "$(filter $(LANGUAGE),nodejs)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: nodejs" && exit 1)
 	chainsaw test scenarios/pii-masking/test \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
+
+# Usage: make test-sql-query LANGUAGE=golang
+# Assumes a kind cluster with Odigos already installed at the version under test.
+test-sql-query: check-chainsaw
+	@test "$(filter $(LANGUAGE),golang)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: golang" && exit 1)
+	chainsaw test scenarios/sql-query/test \
 		--set-string language=$(LANGUAGE) \
 		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
 		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)

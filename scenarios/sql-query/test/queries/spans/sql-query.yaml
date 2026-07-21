@@ -1,0 +1,59 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Client DB spans from sql-query after the curl job runs plain
+  (non-parameterized) Postgres SELECTs via database/sql + lib/pq.
+  Long SELECT lists (id AS …) pad so a ~256-char capture cuts mid-WHERE,
+  mid-FROM, or mid-table-name; the SQL after the cut point stays short.
+serviceName: sql-query
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: sql-query
+  k8s.deployment.name: sql-query
+  k8s.namespace.name: golang-sql-query
+spans:
+  - id: plain-select-statement
+    description: |
+      Client span for SELECT id, name, email FROM users WHERE name = 'alice'
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "SELECT id, name, email FROM users WHERE name = 'alice'"
+      db.query.text: "SELECT id, name, email FROM users WHERE name = 'alice'"
+    expected:
+      minimum: 1
+  - id: truncate-where
+    description: |
+      /query-truncate-where — capture cuts mid-word WHERE (WH|ERE)
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: status_filter_display_name
+      db.query.text: status_filter_display_name
+    expected:
+      minimum: 1
+  - id: truncate-from
+    description: |
+      /query-truncate-from — capture cuts mid-word FROM (FR|OM)
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: shipment_source_lookup_key
+      db.query.text: shipment_source_lookup_key
+    expected:
+      minimum: 1
+  - id: truncate-table
+    description: |
+      /query-truncate-table — capture cuts mid table name (us|ers)
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: inventory_catalog_source_key
+      db.query.text: inventory_catalog_source_key
+    expected:
+      minimum: 1
+  - id: postgres-system
+    description: |
+      DB client span identifies postgresql
+    kind: client
+    spanAttributesAny:
+      db.system: postgresql
+      db.system.name: postgresql
+    expected:
+      minimum: 1

@@ -144,6 +144,12 @@ jobs:
             tier: enterprise
             language: nodejs
             otel_distro_name: 'nodejs-enterprise'
+
+          #### SQL Query ####
+          - scenario: sql-query
+            tier: enterprise
+            language: golang
+            otel_distro_name: 'golang-enterprise'
     steps:
       - uses: actions/checkout@v7
 

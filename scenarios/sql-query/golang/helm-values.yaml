@@ -1,0 +1,4 @@
+namespace: golang-sql-query
+sources:
+  - name: instrument-sql-query
+    workload: sql-query

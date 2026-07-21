@@ -1,0 +1,114 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    odigos.io/test-infra: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        # Skip instrumentation wait — postgres is not an Odigos Source.
+        odigos.io/test-infra: "true"
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              value: app
+            - name: POSTGRES_DB
+              value: sql_query
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "sql_query"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "sql_query"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  selector:
+    app: postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: sql-query
+  labels:
+    app: sql-query
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sql-query
+  template:
+    metadata:
+      labels:
+        app: sql-query
+    spec:
+      containers:
+        - name: sql-query
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:golang-sql-query
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: sql_query
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 2
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: sql-query
+spec:
+  selector:
+    app: sql-query
+  ports:
+    - protocol: TCP
+      port: 8080

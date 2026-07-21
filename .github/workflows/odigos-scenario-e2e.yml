@@ -19,6 +19,7 @@ on:
           - url-templatization
           - rollout
           - pii-masking
+          - sql-query
       languages:
         description: 'Comma-separated languages (nodejs, python, java, golang)'
         required: true
