@@ -132,6 +132,16 @@ jobs:
           context: scenarios/pii-masking/nodejs
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:nodejs-pii-masking
 
+      - name: Build and push python-pii-masking
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/pii-masking/python/deployments/pii-masking/Dockerfile
+          context: scenarios/pii-masking/python
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:python-pii-masking
+
       - name: Build and push golang-sql-query
         uses: depot/build-push-action@v1
         with:

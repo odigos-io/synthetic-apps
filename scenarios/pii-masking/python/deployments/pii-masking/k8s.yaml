@@ -1,0 +1,45 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: pii-masking
+  labels:
+    app: pii-masking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pii-masking
+  template:
+    metadata:
+      labels:
+        app: pii-masking
+    spec:
+      containers:
+        - name: pii-masking
+          image: p0xd21zf5r.registry.depot.dev/synthetic-apps:python-pii-masking
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: pii-masking
+spec:
+  selector:
+    app: pii-masking
+  ports:
+    - protocol: TCP
+      port: 8080

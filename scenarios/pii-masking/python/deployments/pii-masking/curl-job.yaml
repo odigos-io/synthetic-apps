@@ -1,0 +1,59 @@
+# One-off Job: GETs /span/* endpoints that create manual spans with PII attributes.
+# Trigger with: make trigger (from scenarios/pii-masking/python)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pii-masking-curls
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: pii-masking-curls
+        odigos.io/test-infra: "true"
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://pii-masking:8080"
+              echo "BASE_URL=$${BASE_URL}"
+
+              get_span() {
+                path="$$1"
+                echo "GET $${BASE_URL}$${path}"
+                response="$$(curl -sS -f "$${BASE_URL}$${path}")"
+                echo "response=$${response}"
+              }
+
+              echo "GET $${BASE_URL}/healthz"
+              curl -sS -f -o /dev/null "$${BASE_URL}/healthz"
+
+              # CreditCardMasking: Visa + MasterCard on span attributes
+              get_span "/span/credit-card"
+
+              # EmailMasking
+              get_span "/span/email"
+
+              # JwtMasking
+              get_span "/span/jwt"
+
+              # UuidMasking
+              get_span "/span/uuid"
+
+              # CustomFormatMaskings: json / sql / resource_path
+              get_span "/span/custom-format"
+
+              # CustomRegexMaskings: secret_* and acct_* capture groups
+              get_span "/span/custom-regex"
+
+              echo "all curls succeeded"

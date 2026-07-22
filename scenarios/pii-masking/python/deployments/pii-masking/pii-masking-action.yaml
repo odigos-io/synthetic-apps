@@ -1,0 +1,26 @@
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: pii-masking
+  namespace: odigos-system
+spec:
+  signals:
+    - TRACES
+  piiMasking:
+    piiCategories:
+      - CREDIT_CARD
+      - EMAIL
+      - JWT
+      - UUID
+    # Mask values of a named key/segment inside structured attribute text.
+    customFormatMaskings:
+      - dataFormat: json
+        lookupKey: employee_ssn
+      - dataFormat: sql
+        lookupKey: employee_ssn
+      - dataFormat: resource_path
+        lookupKey: tenants
+    # Mask the first capture group of each match.
+    customRegexMaskings:
+      - regex: "secret_([A-Za-z0-9]+)"
+      - regex: "acct_([a-z0-9]+)"
