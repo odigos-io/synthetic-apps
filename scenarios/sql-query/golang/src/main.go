@@ -20,6 +20,8 @@ import (
 const (
 	listenAddr = ":8080"
 	plainQuery = "SELECT id, name, email FROM users WHERE name = 'alice'"
+	// Postgres :: cast operator — used to exercise RemovePostgresCastOperator templatization.
+	castQuery = "SELECT id::integer, name::text, email::text FROM users WHERE name = 'alice'::text"
 	// Traces capture at most ~250 query chars; align a cut mid-word at 256.
 	queryCaptureTruncateAt = 256
 	// Postgres unquoted identifiers are capped at 63 bytes.
@@ -505,6 +507,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthHandler(gate))
 	mux.HandleFunc("/query", queryHandler(gate, plainQuery))
+	mux.HandleFunc("/query-cast", queryHandler(gate, castQuery))
 	mux.HandleFunc("/query-truncate-where", queryHandler(gate, queryTruncateWhere))
 	mux.HandleFunc("/query-truncate-from", queryHandler(gate, queryTruncateFrom))
 	mux.HandleFunc("/query-truncate-table", queryHandler(gate, queryTruncateTable))

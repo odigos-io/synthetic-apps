@@ -1,0 +1,85 @@
+apiVersion: e2e.tests.odigos.io/v1
+kind: SpanBatchTest
+description: |
+  Client DB spans from the Java Cassandra app after the curl job runs
+  plain (non-parameterized) CQL SELECTs via the DataStax Java driver,
+  including lookups by name, by UUID, and WHERE id IN (uuid,uuid).
+serviceName: cassandra
+resourceAttributes:
+  odigos.workload.kind: Deployment
+  odigos.workload.name: cassandra
+  k8s.deployment.name: cassandra
+  k8s.namespace.name: java-cassandra
+spans:
+  - id: select-by-name-alice
+    description: |
+      Client span for SELECT … FROM users WHERE name = 'alice'
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "SELECT id, name, email FROM users WHERE name = 'alice'"
+      db.query.text: "SELECT id, name, email FROM users WHERE name = 'alice'"
+    expected:
+      minimum: 1
+  - id: select-by-name-bob
+    description: |
+      Client span for SELECT … FROM users WHERE name = 'bob'
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "SELECT id, name, email FROM users WHERE name = 'bob'"
+      db.query.text: "SELECT id, name, email FROM users WHERE name = 'bob'"
+    expected:
+      minimum: 1
+  - id: select-by-id-alice
+    description: |
+      Client span for SELECT … FROM users WHERE id = 8f14e45f-ceea-467c-9a7e-3f8c1b2a9d01
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "8f14e45f-ceea-467c-9a7e-3f8c1b2a9d01"
+      db.query.text: "8f14e45f-ceea-467c-9a7e-3f8c1b2a9d01"
+    expected:
+      minimum: 1
+  - id: select-by-id-bob
+    description: |
+      Client span for SELECT … FROM users WHERE id = 2d711642-b01b-4c8b-9a7e-5e3f1a0c8b22
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "2d711642-b01b-4c8b-9a7e-5e3f1a0c8b22"
+      db.query.text: "2d711642-b01b-4c8b-9a7e-5e3f1a0c8b22"
+    expected:
+      minimum: 1
+  - id: select-by-id-carol
+    description: |
+      Client span for SELECT … FROM users WHERE id = c56a4180-65aa-42ec-a945-5fd21dec0538
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "c56a4180-65aa-42ec-a945-5fd21dec0538"
+      db.query.text: "c56a4180-65aa-42ec-a945-5fd21dec0538"
+    expected:
+      minimum: 1
+  - id: select-by-id-in
+    description: |
+      Client span for SELECT … FROM users WHERE id IN (uuid,uuid) with no space after commas
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "id IN (8f14e45f-ceea-467c-9a7e-3f8c1b2a9d01,2d711642-b01b-4c8b-9a7e-5e3f1a0c8b22)"
+      db.query.text: "id IN (8f14e45f-ceea-467c-9a7e-3f8c1b2a9d01,2d711642-b01b-4c8b-9a7e-5e3f1a0c8b22)"
+    expected:
+      minimum: 1
+  - id: select-all
+    description: |
+      Client span for SELECT id, name, email FROM users
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "SELECT id, name, email FROM users"
+      db.query.text: "SELECT id, name, email FROM users"
+    expected:
+      minimum: 1
+  - id: cassandra-system
+    description: |
+      DB client span identifies cassandra
+    kind: client
+    spanAttributesAny:
+      db.system: cassandra
+      db.system.name: cassandra
+    expected:
+      minimum: 1

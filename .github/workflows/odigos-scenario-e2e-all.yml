@@ -148,6 +148,16 @@ jobs:
             tier: enterprise
             language: golang
             otel_distro_name: 'golang-enterprise'
+          - scenario: sql-query
+            tier: enterprise
+            language: java
+            otel_distro_name: 'java-enterprise'
+
+          #### Cassandra ####
+          - scenario: cassandra
+            tier: enterprise
+            language: java
+            otel_distro_name: 'java-enterprise'
     steps:
       - uses: actions/checkout@v7
 

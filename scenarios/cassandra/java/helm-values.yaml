@@ -1,0 +1,4 @@
+namespace: java-cassandra
+sources:
+  - name: instrument-cassandra
+    workload: cassandra

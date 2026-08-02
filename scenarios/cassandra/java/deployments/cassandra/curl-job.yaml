@@ -1,0 +1,84 @@
+# One-off Job: exercise plain (non-parameterized) Cassandra CQL SELECTs,
+# including lookups by name, by UUID, and WHERE id IN (uuid,uuid).
+# Trigger with: make trigger (from scenarios/cassandra/java)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cassandra-curls
+  labels:
+    odigos.io/test-infra: "true"
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: cassandra-curls
+        odigos.io/test-infra: "true"
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://cassandra:8080"
+              ALICE_ID="8f14e45f-ceea-467c-9a7e-3f8c1b2a9d01"
+              BOB_ID="2d711642-b01b-4c8b-9a7e-5e3f1a0c8b22"
+              CAROL_ID="c56a4180-65aa-42ec-a945-5fd21dec0538"
+              echo "BASE_URL=$${BASE_URL}"
+
+              echo "GET $${BASE_URL}/healthz"
+              curl -sS -f -o /dev/null "$${BASE_URL}/healthz"
+
+              echo "GET $${BASE_URL}/query"
+              response="$$(curl -sS -f "$${BASE_URL}/query")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'alice@example.com'
+              echo "$${response}" | grep -q "$${ALICE_ID}"
+
+              echo "GET $${BASE_URL}/query-bob"
+              response="$$(curl -sS -f "$${BASE_URL}/query-bob")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'bob@example.com'
+              echo "$${response}" | grep -q "$${BOB_ID}"
+
+              echo "GET $${BASE_URL}/query-by-id"
+              response="$$(curl -sS -f "$${BASE_URL}/query-by-id")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'alice@example.com'
+              echo "$${response}" | grep -q "$${ALICE_ID}"
+
+              echo "GET $${BASE_URL}/query-by-id-bob"
+              response="$$(curl -sS -f "$${BASE_URL}/query-by-id-bob")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'bob@example.com'
+              echo "$${response}" | grep -q "$${BOB_ID}"
+
+              echo "GET $${BASE_URL}/query-by-id-carol"
+              response="$$(curl -sS -f "$${BASE_URL}/query-by-id-carol")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'carol@example.com'
+              echo "$${response}" | grep -q "$${CAROL_ID}"
+
+              echo "GET $${BASE_URL}/query-by-id-in"
+              response="$$(curl -sS -f "$${BASE_URL}/query-by-id-in")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q 'alice@example.com'
+              echo "$${response}" | grep -q 'bob@example.com'
+              echo "$${response}" | grep -q "$${ALICE_ID}"
+              echo "$${response}" | grep -q "$${BOB_ID}"
+              echo "$${response}" | grep -q "id IN ($${ALICE_ID},$${BOB_ID})"
+
+              echo "GET $${BASE_URL}/query-all"
+              response="$$(curl -sS -f "$${BASE_URL}/query-all")"
+              echo "response=$${response}"
+              echo "$${response}" | grep -q "$${ALICE_ID}"
+              echo "$${response}" | grep -q "$${BOB_ID}"
+              echo "$${response}" | grep -q "$${CAROL_ID}"
+
+              echo "all curls succeeded"

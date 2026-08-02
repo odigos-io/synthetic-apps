@@ -20,6 +20,7 @@ on:
           - rollout
           - pii-masking
           - sql-query
+          - cassandra
       languages:
         description: 'Comma-separated languages (nodejs, python, java, golang)'
         required: true

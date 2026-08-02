@@ -1,7 +1,7 @@
 # One-off Job: exercise plain (non-parameterized) Postgres SELECTs, including
 # :: cast operator usage and queries padded so a ~256-char capture cuts
 # mid-WHERE / mid-FROM / mid-table-name.
-# Trigger with: make trigger (from scenarios/sql-query/golang)
+# Trigger with: make trigger (from scenarios/sql-query/java)
 apiVersion: batch/v1
 kind: Job
 metadata:

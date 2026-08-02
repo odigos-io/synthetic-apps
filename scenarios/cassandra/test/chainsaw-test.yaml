@@ -1,16 +1,16 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: sql-query
+  name: cassandra
 spec:
   description: |
-    E2E tests for Odigos SQL query capture on a Postgres app (Go database/sql or Java JDBC).
+    E2E tests for Odigos Cassandra query capture on a Java DataStax driver app.
     Prerequisites: a kind cluster with Odigos already installed at the version under test.
-    Usage: make test-sql-query LANGUAGE=golang|java
+    Usage: make test-cassandra LANGUAGE=java
   skipDelete: true
   bindings:
     - name: tests_namespace
-      value: (join('-', [$values.language, 'sql-query']))
+      value: (join('-', [$values.language, 'cassandra']))
   steps:
 
     - name: Create Tests Namespace
@@ -61,7 +61,7 @@ spec:
               fi
 
               kubectl get namespace odigos-system >/dev/null
-              echo "deploying sql-query app from ${app_dir} into ${TESTS_NAMESPACE}"
+              echo "deploying cassandra app from ${app_dir} into ${TESTS_NAMESPACE}"
               if [ -n "${OTEL_DISTRO_NAME:-}" ]; then
                 echo "using otel distro override: ${OTEL_DISTRO_NAME}"
               fi
@@ -128,7 +128,7 @@ spec:
 
               app_dir="$(cd .. && pwd)/${LANGUAGE}"
               cd "${app_dir}"
-              make trigger-sql-query-curls NAMESPACE="${TESTS_NAMESPACE}"
+              make trigger-cassandra-curls NAMESPACE="${TESTS_NAMESPACE}"
 
     - name: Assert expected spans
       try:
@@ -142,7 +142,7 @@ spec:
               set -euo pipefail
               deadline=$(($(date +%s) + 120))
               while true; do
-                if ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/sql-query.yaml "$TRACE_NAMESPACE" simple-trace-db; then
+                if ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/cassandra.yaml "$TRACE_NAMESPACE" simple-trace-db; then
                   exit 0
                 fi
                 if [[ $(date +%s) -ge deadline ]]; then
@@ -157,4 +157,4 @@ spec:
               - name: TRACE_NAMESPACE
                 value: ($namespace)
             content: |
-              ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/sql-query.yaml --verbose "$TRACE_NAMESPACE" simple-trace-db
+              ../../../tests/common/assert/simple_trace_db_span_query_runner.sh ./queries/spans/cassandra.yaml --verbose "$TRACE_NAMESPACE" simple-trace-db

@@ -13,6 +13,7 @@ on:
       - 'scenarios/rollout/**'
       - 'scenarios/pii-masking/**'
       - 'scenarios/sql-query/**'
+      - 'scenarios/cassandra/**'
       - '.github/workflows/build-depot-images.yml'
 
 permissions:
@@ -151,3 +152,23 @@ jobs:
           file: scenarios/sql-query/golang/deployments/sql-query/Dockerfile
           context: scenarios/sql-query/golang
           tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:golang-sql-query
+
+      - name: Build and push java-sql-query
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/sql-query/java/deployments/sql-query/Dockerfile
+          context: scenarios/sql-query/java
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:java-sql-query
+
+      - name: Build and push java-cassandra
+        uses: depot/build-push-action@v1
+        with:
+          project: ddgftn5pcl
+          push: true
+          platforms: linux/amd64,linux/arm64
+          file: scenarios/cassandra/java/deployments/cassandra/Dockerfile
+          context: scenarios/cassandra/java
+          tags: ${{ env.DEPOT_REGISTRY }}/synthetic-apps:java-cassandra

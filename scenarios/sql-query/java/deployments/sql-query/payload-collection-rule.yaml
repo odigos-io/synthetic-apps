@@ -1,0 +1,8 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationRule
+metadata:
+  name: sql-query-payload-collection
+  namespace: odigos-system
+spec:
+  payloadCollection:
+    dbQuery: {}

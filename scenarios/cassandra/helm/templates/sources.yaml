@@ -1,0 +1,18 @@
+{{- range .Values.sources }}
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  workload:
+    kind: Deployment
+    name: {{ .workload }}
+    namespace: {{ $.Values.namespace }}
+  {{- if $.Values.otelDistroName }}
+  containerOverrides:
+    - containerName: {{ .workload }}
+      otelDistroName: {{ $.Values.otelDistroName | quote }}
+  {{- end }}
+{{- end }}

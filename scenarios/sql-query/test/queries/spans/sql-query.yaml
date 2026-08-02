@@ -2,15 +2,17 @@ apiVersion: e2e.tests.odigos.io/v1
 kind: SpanBatchTest
 description: |
   Client DB spans from sql-query after the curl job runs plain
-  (non-parameterized) Postgres SELECTs via database/sql + lib/pq.
+  (non-parameterized) Postgres SELECTs (Go database/sql or Java JDBC),
+  including PostgreSQL :: cast operator usage.
   Long SELECT lists (id AS …) pad so a ~256-char capture cuts mid-WHERE,
   mid-FROM, or mid-table-name; the SQL after the cut point stays short.
 serviceName: sql-query
+resourceAttributesEndsWith:
+  k8s.namespace.name: "-sql-query"
 resourceAttributes:
   odigos.workload.kind: Deployment
   odigos.workload.name: sql-query
   k8s.deployment.name: sql-query
-  k8s.namespace.name: golang-sql-query
 spans:
   - id: plain-select-statement
     description: |
@@ -19,6 +21,16 @@ spans:
     spanAttributesContainsAny:
       db.statement: "SELECT id, name, email FROM users WHERE name = 'alice'"
       db.query.text: "SELECT id, name, email FROM users WHERE name = 'alice'"
+    expected:
+      minimum: 1
+  - id: postgres-cast-operator
+    description: |
+      /query-cast — PostgreSQL :: cast operator in SELECT and WHERE
+      (SELECT id::integer, name::text, email::text … WHERE name = 'alice'::text)
+    kind: client
+    spanAttributesContainsAny:
+      db.statement: "::text"
+      db.query.text: "::text"
     expected:
       minimum: 1
   - id: truncate-where

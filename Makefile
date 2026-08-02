@@ -1,6 +1,6 @@
 include depot.mk
 
-.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http test-rollout test-pii-masking test-sql-query
+.PHONY: check-chainsaw test-runtime-version test-runtime-versions test-tail-sampling test-url-templatization test-head-sampling-grpc test-head-sampling-http test-rollout test-pii-masking test-sql-query test-cassandra
 
 check-chainsaw:
 	@command -v chainsaw >/dev/null 2>&1 || { \
@@ -86,11 +86,20 @@ test-pii-masking: check-chainsaw
 		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
 		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
 
-# Usage: make test-sql-query LANGUAGE=golang
+# Usage: make test-sql-query LANGUAGE=golang|java
 # Assumes a kind cluster with Odigos already installed at the version under test.
 test-sql-query: check-chainsaw
-	@test "$(filter $(LANGUAGE),golang)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: golang" && exit 1)
+	@test "$(filter $(LANGUAGE),golang java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: golang java" && exit 1)
 	chainsaw test scenarios/sql-query/test \
+		--set-string language=$(LANGUAGE) \
+		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
+		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
+
+# Usage: make test-cassandra LANGUAGE=java
+# Assumes a kind cluster with Odigos already installed at the version under test.
+test-cassandra: check-chainsaw
+	@test "$(filter $(LANGUAGE),java)" = "$(LANGUAGE)" || (echo "LANGUAGE must be one of: java" && exit 1)
+	chainsaw test scenarios/cassandra/test \
 		--set-string language=$(LANGUAGE) \
 		--set-string depot_pull_token=$${DEPOT_SYNTHTIC_APPS_PULL_TOKEN:-} \
 		--set-string otel_distro_name=$(OTEL_DISTRO_NAME)
