@@ -1,0 +1,62 @@
+# Non-stop traffic — hits 3 named transactions on stacks-gateway.
+# make trigger-traffic  |  make stop-traffic
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stacks-traffic
+  namespace: stacks
+  labels:
+    app: stacks-traffic
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: stacks-traffic
+  template:
+    metadata:
+      labels:
+        app: stacks-traffic
+    spec:
+      activeDeadlineSeconds: 3700
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TRAFFIC_DURATION_SECONDS
+              value: "3600"
+            - name: TRAFFIC_PARALLEL
+              value: "3"
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              DURATION="${TRAFFIC_DURATION_SECONDS:-3600}"
+              PARALLEL="${TRAFFIC_PARALLEL:-3}"
+              GW="http://stacks-gateway:8080"
+
+              echo "BOOM traffic → stacks-gateway (3 transactions) pod=${HOSTNAME} duration=${DURATION}s"
+              echo "Stop: make stop-traffic"
+
+              end=$(( $(date +%s) + DURATION ))
+              i=0
+              while [ "$(date +%s)" -lt "$end" ]; do
+                i=$((i + 1))
+                p=1
+                while [ "$p" -le "$PARALLEL" ]; do
+                  key="${HOSTNAME}-${i}-${p}"
+                  curl -sS -f -o /dev/null -X POST "${GW}/transactions/place-order" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"key\":\"${key}\",\"value\":\"order-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
+                  curl -sS -f -o /dev/null -X POST "${GW}/transactions/sync-catalog" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"key\":\"${key}\",\"value\":\"catalog-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
+                  curl -sS -f -o /dev/null -X POST "${GW}/transactions/fulfill-shipment" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"key\":\"${key}\",\"value\":\"ship-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
+                  p=$((p + 1))
+                done
+                wait
+              done
+
+              echo "BOOM traffic finished pod=${HOSTNAME} loops=${i}"

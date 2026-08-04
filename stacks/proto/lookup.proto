@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package stacks;
+
+option go_package = "cache-go/pb";
+
+service LookupService {
+  rpc Get(LookupRequest) returns (LookupResponse);
+}
+
+message LookupRequest {
+  string key = 1;
+}
+
+message LookupResponse {
+  string key = 1;
+  string value = 2;
+  string source = 3;
+}

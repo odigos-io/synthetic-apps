@@ -1,0 +1,146 @@
+# Unified gateway (single entry point for all 3 transactions)
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-stacks-gateway
+  namespace: stacks
+spec:
+  workload:
+    kind: Deployment
+    name: stacks-gateway
+    namespace: stacks
+---
+# Redis stack (4 apps — worker consumes async from notifier)
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-session-python
+  namespace: stacks-redis
+spec:
+  workload:
+    kind: Deployment
+    name: session-python
+    namespace: stacks-redis
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-cache-go
+  namespace: stacks-redis
+spec:
+  workload:
+    kind: Deployment
+    name: cache-go
+    namespace: stacks-redis
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-notifier-java
+  namespace: stacks-redis
+spec:
+  workload:
+    kind: Deployment
+    name: notifier-java
+    namespace: stacks-redis
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-worker-nodejs
+  namespace: stacks-redis
+spec:
+  workload:
+    kind: Deployment
+    name: worker-nodejs
+    namespace: stacks-redis
+---
+# Kafka stack (5 apps)
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-processor-java
+  namespace: stacks-kafka
+spec:
+  workload:
+    kind: Deployment
+    name: processor-java
+    namespace: stacks-kafka
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-inventory-go
+  namespace: stacks-kafka
+spec:
+  workload:
+    kind: Deployment
+    name: inventory-go
+    namespace: stacks-kafka
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-analytics-python
+  namespace: stacks-kafka
+spec:
+  workload:
+    kind: Deployment
+    name: analytics-python
+    namespace: stacks-kafka
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-relay-nodejs
+  namespace: stacks-kafka
+spec:
+  workload:
+    kind: Deployment
+    name: relay-nodejs
+    namespace: stacks-kafka
+---
+# Postgres stack (4 apps)
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-users-go
+  namespace: stacks-postgres
+spec:
+  workload:
+    kind: Deployment
+    name: users-go
+    namespace: stacks-postgres
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-orders-python
+  namespace: stacks-postgres
+spec:
+  workload:
+    kind: Deployment
+    name: orders-python
+    namespace: stacks-postgres
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-billing-java
+  namespace: stacks-postgres
+spec:
+  workload:
+    kind: Deployment
+    name: billing-java
+    namespace: stacks-postgres
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-audit-go
+  namespace: stacks-postgres
+spec:
+  workload:
+    kind: Deployment
+    name: audit-go
+    namespace: stacks-postgres
