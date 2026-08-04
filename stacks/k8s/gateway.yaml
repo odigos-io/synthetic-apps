@@ -1,0 +1,49 @@
+# Unified entry gateway — 3 named transactions, each fans out to all stacks.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: stacks-gateway
+  namespace: stacks
+  labels:
+    app: stacks-gateway
+spec:
+  selector:
+    matchLabels:
+      app: stacks-gateway
+  template:
+    metadata:
+      labels:
+        app: stacks-gateway
+    spec:
+      containers:
+        - name: stacks-gateway
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-gateway:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: STARTUP_DELAY_MS
+              value: '8000'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: stacks-gateway
+  namespace: stacks
+spec:
+  selector:
+    app: stacks-gateway
+  ports:
+    - port: 8080

@@ -1,0 +1,223 @@
+# Postgres stack: 5 apps + Postgres (HTTP, Postgres, gRPC)
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              value: app
+            - name: POSTGRES_DB
+              value: stacks
+          readinessProbe:
+            exec:
+              command: ['pg_isready', '-U', 'app', '-d', 'stacks']
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: users-go
+spec:
+  selector:
+    matchLabels:
+      app: users-go
+  template:
+    metadata:
+      labels:
+        app: users-go
+    spec:
+      containers:
+        - name: users-go
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-postgres-users-go:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 50051
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: stacks
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: users-go
+spec:
+  selector:
+    app: users-go
+  ports:
+    - name: http
+      port: 8080
+    - name: grpc
+      port: 50051
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: orders-python
+spec:
+  selector:
+    matchLabels:
+      app: orders-python
+  template:
+    metadata:
+      labels:
+        app: orders-python
+    spec:
+      containers:
+        - name: orders-python
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-postgres-orders-python:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: stacks
+            - name: USERS_URL
+              value: http://users-go:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: orders-python
+spec:
+  selector:
+    app: orders-python
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: billing-java
+spec:
+  selector:
+    matchLabels:
+      app: billing-java
+  template:
+    metadata:
+      labels:
+        app: billing-java
+    spec:
+      containers:
+        - name: billing-java
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-postgres-billing-java:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: stacks
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 25
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: billing-java
+spec:
+  selector:
+    app: billing-java
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: audit-go
+spec:
+  selector:
+    matchLabels:
+      app: audit-go
+  template:
+    metadata:
+      labels:
+        app: audit-go
+    spec:
+      containers:
+        - name: audit-go
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-postgres-audit-go:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: app
+            - name: PGPASSWORD
+              value: app
+            - name: PGDATABASE
+              value: stacks
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: audit-go
+spec:
+  selector:
+    app: audit-go
+  ports:
+    - port: 8080

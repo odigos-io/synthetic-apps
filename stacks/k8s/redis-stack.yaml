@@ -1,0 +1,196 @@
+# Redis stack: 5 apps + Redis (HTTP, Redis pub/sub/list, gRPC)
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ['redis-cli', 'ping']
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: session-python
+spec:
+  selector:
+    matchLabels:
+      app: session-python
+  template:
+    metadata:
+      labels:
+        app: session-python
+    spec:
+      containers:
+        - name: session-python
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-redis-session-python:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: CACHE_URL
+              value: http://cache-go:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: session-python
+spec:
+  selector:
+    app: session-python
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cache-go
+spec:
+  selector:
+    matchLabels:
+      app: cache-go
+  template:
+    metadata:
+      labels:
+        app: cache-go
+    spec:
+      containers:
+        - name: cache-go
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-redis-cache-go:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 50051
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: NOTIFIER_URL
+              value: http://notifier-java:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: cache-go
+spec:
+  selector:
+    app: cache-go
+  ports:
+    - name: http
+      port: 8080
+    - name: grpc
+      port: 50051
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: notifier-java
+spec:
+  selector:
+    matchLabels:
+      app: notifier-java
+  template:
+    metadata:
+      labels:
+        app: notifier-java
+    spec:
+      containers:
+        - name: notifier-java
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-redis-notifier-java:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_HOST
+              value: redis
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: notifier-java
+spec:
+  selector:
+    app: notifier-java
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: worker-nodejs
+spec:
+  selector:
+    matchLabels:
+      app: worker-nodejs
+  template:
+    metadata:
+      labels:
+        app: worker-nodejs
+    spec:
+      containers:
+        - name: worker-nodejs
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-redis-worker-nodejs:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_HOST
+              value: redis
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: worker-nodejs
+spec:
+  selector:
+    app: worker-nodejs
+  ports:
+    - port: 8080
