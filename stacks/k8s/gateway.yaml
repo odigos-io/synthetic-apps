@@ -1,4 +1,4 @@
-# Unified entry gateway — 3 named transactions, each fans out to all stacks.
+# Unified entry gateway — 10 named transactions across 5 stacks.
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -24,6 +24,10 @@ spec:
           env:
             - name: STARTUP_DELAY_MS
               value: '8000'
+            - name: MESSAGING_GATEWAY_URL
+              value: http://messaging-gateway.stacks-messaging.svc.cluster.local:8080
+            - name: SEARCH_GATEWAY_URL
+              value: http://search-gateway.stacks-search.svc.cluster.local:8080
           readinessProbe:
             httpGet:
               path: /health

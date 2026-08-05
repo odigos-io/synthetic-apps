@@ -1,5 +1,4 @@
-# Non-stop traffic — hits 3 named transactions on stacks-gateway.
-# make trigger-traffic  |  make stop-traffic
+# Non-stop traffic — all 10 stacks-gateway transactions
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,7 +25,7 @@ spec:
             - name: TRAFFIC_DURATION_SECONDS
               value: "3600"
             - name: TRAFFIC_PARALLEL
-              value: "3"
+              value: "6"
           command: ["sh", "-c"]
           args:
             - |
@@ -34,8 +33,9 @@ spec:
               DURATION="${TRAFFIC_DURATION_SECONDS:-3600}"
               PARALLEL="${TRAFFIC_PARALLEL:-3}"
               GW="http://stacks-gateway:8080"
+              TXNS="place-order sync-catalog fulfill-shipment publish-product apply-pricing sync-recommendations customer-lookup index-document ship-order platform-wide"
 
-              echo "BOOM traffic → stacks-gateway (3 transactions) pod=${HOSTNAME} duration=${DURATION}s"
+              echo "BOOM → stacks-gateway (10 transactions) pod=${HOSTNAME} duration=${DURATION}s"
               echo "Stop: make stop-traffic"
 
               end=$(( $(date +%s) + DURATION ))
@@ -45,18 +45,13 @@ spec:
                 p=1
                 while [ "$p" -le "$PARALLEL" ]; do
                   key="${HOSTNAME}-${i}-${p}"
-                  curl -sS -f -o /dev/null -X POST "${GW}/transactions/place-order" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"key\":\"${key}\",\"value\":\"order-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
-                  curl -sS -f -o /dev/null -X POST "${GW}/transactions/sync-catalog" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"key\":\"${key}\",\"value\":\"catalog-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
-                  curl -sS -f -o /dev/null -X POST "${GW}/transactions/fulfill-shipment" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"key\":\"${key}\",\"value\":\"ship-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
+                  for txn in $TXNS; do
+                    curl -sS -f -o /dev/null -X POST "${GW}/transactions/${txn}" \
+                      -H "Content-Type: application/json" \
+                      -d "{\"key\":\"${key}\",\"value\":\"${txn}-${i}\",\"userId\":\"user-1\",\"amount\":${i}.99}" &
+                  done
                   p=$((p + 1))
                 done
                 wait
               done
-
-              echo "BOOM traffic finished pod=${HOSTNAME} loops=${i}"
+              echo "BOOM finished pod=${HOSTNAME} loops=${i}"

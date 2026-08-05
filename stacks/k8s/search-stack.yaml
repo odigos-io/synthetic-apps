@@ -1,0 +1,339 @@
+# Search stack: MySQL + Elasticsearch + Memcached + 5 apps (.NET, Django, Echo, PHP, Fastify)
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+            - name: MYSQL_DATABASE
+              value: stacks
+            - name: MYSQL_USER
+              value: app
+            - name: MYSQL_PASSWORD
+              value: app
+          readinessProbe:
+            exec:
+              command: ['mysqladmin', 'ping', '-h', '127.0.0.1', '-uapp', '-papp']
+            initialDelaySeconds: 15
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+          ports:
+            - containerPort: 9200
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled
+              value: "false"
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9200
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - port: 9200
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: memcached
+spec:
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      containers:
+        - name: memcached
+          image: memcached:1.6-alpine
+          ports:
+            - containerPort: 11211
+          readinessProbe:
+            tcpSocket:
+              port: 11211
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: memcached
+spec:
+  selector:
+    app: memcached
+  ports:
+    - port: 11211
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: search-gateway
+spec:
+  selector:
+    matchLabels:
+      app: search-gateway
+  template:
+    metadata:
+      labels:
+        app: search-gateway
+    spec:
+      containers:
+        - name: search-gateway
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-search-gateway:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DJANGO_URL
+              value: http://django-crm:8080
+            - name: INDEXER_URL
+              value: http://go-indexer:8080
+            - name: PHP_URL
+              value: http://php-shipping:8080
+            - name: CACHE_URL
+              value: http://nodejs-cache:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: search-gateway
+spec:
+  selector:
+    app: search-gateway
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: django-crm
+spec:
+  selector:
+    matchLabels:
+      app: django-crm
+  template:
+    metadata:
+      labels:
+        app: django-crm
+    spec:
+      containers:
+        - name: django-crm
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-search-django:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MYSQL_HOST
+              value: mysql
+            - name: MYSQL_DB_PORT
+              value: "3306"
+            - name: MYSQL_DATABASE
+              value: stacks
+            - name: MYSQL_USER
+              value: app
+            - name: MYSQL_PASSWORD
+              value: app
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 25
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: django-crm
+spec:
+  selector:
+    app: django-crm
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: go-indexer
+spec:
+  selector:
+    matchLabels:
+      app: go-indexer
+  template:
+    metadata:
+      labels:
+        app: go-indexer
+    spec:
+      containers:
+        - name: go-indexer
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-search-indexer:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ELASTICSEARCH_URL
+              value: http://elasticsearch:9200
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: go-indexer
+spec:
+  selector:
+    app: go-indexer
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: php-shipping
+spec:
+  selector:
+    matchLabels:
+      app: php-shipping
+  template:
+    metadata:
+      labels:
+        app: php-shipping
+    spec:
+      containers:
+        - name: php-shipping
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-search-php:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MYSQL_HOST
+              value: mysql
+            - name: MYSQL_DB_PORT
+              value: "3306"
+            - name: MYSQL_DATABASE
+              value: stacks
+            - name: MYSQL_USER
+              value: app
+            - name: MYSQL_PASSWORD
+              value: app
+            - name: INDEXER_URL
+              value: http://go-indexer:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 25
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: php-shipping
+spec:
+  selector:
+    app: php-shipping
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nodejs-cache
+spec:
+  selector:
+    matchLabels:
+      app: nodejs-cache
+  template:
+    metadata:
+      labels:
+        app: nodejs-cache
+    spec:
+      containers:
+        - name: nodejs-cache
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-search-cache:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MEMCACHED_HOST
+              value: memcached
+            - name: MEMCACHED_DB_PORT
+              value: "11211"
+            - name: INDEXER_URL
+              value: http://go-indexer:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: nodejs-cache
+spec:
+  selector:
+    app: nodejs-cache
+  ports:
+    - port: 8080

@@ -144,3 +144,115 @@ spec:
     kind: Deployment
     name: audit-go
     namespace: stacks-postgres
+---
+# Messaging stack gateway + 4 apps
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-messaging-gateway
+  namespace: stacks-messaging
+spec:
+  workload:
+    kind: Deployment
+    name: messaging-gateway
+    namespace: stacks-messaging
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-fastapi-products
+  namespace: stacks-messaging
+spec:
+  workload:
+    kind: Deployment
+    name: fastapi-products
+    namespace: stacks-messaging
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-quarkus-pricing
+  namespace: stacks-messaging
+spec:
+  workload:
+    kind: Deployment
+    name: quarkus-pricing
+    namespace: stacks-messaging
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-gin-recommendations
+  namespace: stacks-messaging
+spec:
+  workload:
+    kind: Deployment
+    name: gin-recommendations
+    namespace: stacks-messaging
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-messaging-worker
+  namespace: stacks-messaging
+spec:
+  workload:
+    kind: Deployment
+    name: messaging-worker
+    namespace: stacks-messaging
+---
+# Search stack gateway + 4 apps
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-search-gateway
+  namespace: stacks-search
+spec:
+  workload:
+    kind: Deployment
+    name: search-gateway
+    namespace: stacks-search
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-django-crm
+  namespace: stacks-search
+spec:
+  workload:
+    kind: Deployment
+    name: django-crm
+    namespace: stacks-search
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-go-indexer
+  namespace: stacks-search
+spec:
+  workload:
+    kind: Deployment
+    name: go-indexer
+    namespace: stacks-search
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-php-shipping
+  namespace: stacks-search
+spec:
+  workload:
+    kind: Deployment
+    name: php-shipping
+    namespace: stacks-search
+---
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-nodejs-cache
+  namespace: stacks-search
+spec:
+  workload:
+    kind: Deployment
+    name: nodejs-cache
+    namespace: stacks-search
