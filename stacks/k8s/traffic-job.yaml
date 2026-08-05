@@ -1,4 +1,4 @@
-# Burst traffic — 3 transactions × iterations on stacks-gateway
+# Burst traffic — 10 transactions on stacks-gateway
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -16,9 +16,9 @@ spec:
           image: curlimages/curl:8.4.0
           env:
             - name: TRAFFIC_ITERATIONS
-              value: "500"
+              value: "1000"
             - name: TRAFFIC_WORKERS
-              value: "10"
+              value: "20"
           command: ["sh", "-c"]
           args:
             - |
@@ -26,36 +26,27 @@ spec:
               ITERATIONS="${TRAFFIC_ITERATIONS:-500}"
               WORKERS="${TRAFFIC_WORKERS:-10}"
               GW="http://stacks-gateway:8080"
-              TXNS="place-order sync-catalog fulfill-shipment"
+              TXNS="place-order sync-catalog fulfill-shipment publish-product apply-pricing sync-recommendations customer-lookup index-document ship-order platform-wide"
               per_worker=$((ITERATIONS / WORKERS))
               remainder=$((ITERATIONS % WORKERS))
-
-              echo "burst traffic: ${ITERATIONS} iterations × 3 transactions = $((ITERATIONS * 3)) gateway requests"
-
+              echo "burst: ${ITERATIONS} x 10 transactions = $((ITERATIONS * 10)) requests"
               worker() {
-                wid="$1" count="$2" wok=0 wfail=0 i=1
+                wid="$1" count="$2" wok=0 i=1
                 while [ "$i" -le "$count" ]; do
                   key="${wid}-item-${i}"
                   for txn in $TXNS; do
-                    if curl -sS -f -o /dev/null -X POST "${GW}/transactions/${txn}" \
+                    curl -sS -f -o /dev/null -X POST "${GW}/transactions/${txn}" \
                       -H "Content-Type: application/json" \
-                      -d "{\"key\":\"${key}\",\"value\":\"burst\",\"userId\":\"user-1\",\"amount\":${i}.99}"; then
-                      wok=$((wok + 1))
-                    else
-                      wfail=$((wfail + 1))
-                    fi
+                      -d "{\"key\":\"${key}\",\"value\":\"burst\",\"userId\":\"user-1\",\"amount\":${i}.99}" && wok=$((wok+1)) || true
                   done
                   i=$((i + 1))
                 done
-                echo "worker ${wid} ok=${wok} fail=${wfail}"
+                echo "worker ${wid} ok=${wok}"
               }
-
               w=1
               while [ "$w" -le "$WORKERS" ]; do
-                count=$per_worker
-                [ "$w" -le "$remainder" ] && count=$((count + 1))
+                count=$per_worker; [ "$w" -le "$remainder" ] && count=$((count + 1))
                 worker "$w" "$count" &
                 w=$((w + 1))
               done
               wait
-              echo "burst complete"

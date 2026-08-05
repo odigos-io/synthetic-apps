@@ -26,6 +26,9 @@ const ORDERS_URL = process.env.ORDERS_URL || "http://orders-python.stacks-postgr
 const BILLING_URL = process.env.BILLING_URL || "http://billing-java.stacks-postgres.svc.cluster.local:8080";
 const AUDIT_URL = process.env.AUDIT_URL || "http://audit-go.stacks-postgres.svc.cluster.local:8080";
 
+const MESSAGING_GATEWAY = process.env.MESSAGING_GATEWAY_URL || "http://messaging-gateway.stacks-messaging.svc.cluster.local:8080";
+const SEARCH_GATEWAY = process.env.SEARCH_GATEWAY_URL || "http://search-gateway.stacks-search.svc.cluster.local:8080";
+
 const protoPath = path.join(__dirname, "proto", "lookup.proto");
 const pkgDef = protoLoader.loadSync(protoPath, {
   keepCase: true, longs: String, enums: String, defaults: true, oneofs: true,
@@ -120,6 +123,27 @@ async function postgresStack(userId, amount, source, action, steps) {
   steps.push({ stack: "postgres", service: "audit-go", status: audit.status });
 }
 
+async function messagingStack(txn, key, value, steps) {
+  const resp = await fetch(`${MESSAGING_GATEWAY}/transactions/${txn}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, value }),
+  });
+  steps.push({ stack: "messaging", gateway: txn, status: resp.status, body: await resp.json().catch(() => ({})) });
+}
+
+async function searchStack(txn, key, userId, value, steps) {
+  const body = txn === "ship-order"
+    ? { orderId: key, customerId: userId, key }
+    : { customerId: userId, id: key, key, body: value || `data-${key}` };
+  const resp = await fetch(`${SEARCH_GATEWAY}/transactions/${txn}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  steps.push({ stack: "search", gateway: txn, status: resp.status, body: await resp.json().catch(() => ({})) });
+}
+
+function valueOr(key) { return `data-${key}`; }
+
 const app = express();
 app.use(express.json());
 
@@ -132,9 +156,16 @@ app.get("/health", (_req, res) => {
 app.get("/transactions", (_req, res) => {
   res.json({
     transactions: [
-      { name: "place-order", method: "POST", path: "/transactions/place-order", order: "redis → kafka → postgres" },
-      { name: "sync-catalog", method: "POST", path: "/transactions/sync-catalog", order: "kafka → postgres → redis" },
-      { name: "fulfill-shipment", method: "POST", path: "/transactions/fulfill-shipment", order: "postgres → redis → kafka" },
+      { name: "place-order", method: "POST", path: "/transactions/place-order", stacks: "redis → kafka → postgres" },
+      { name: "sync-catalog", method: "POST", path: "/transactions/sync-catalog", stacks: "kafka → postgres → redis" },
+      { name: "fulfill-shipment", method: "POST", path: "/transactions/fulfill-shipment", stacks: "postgres → redis → kafka" },
+      { name: "publish-product", method: "POST", path: "/transactions/publish-product", stacks: "messaging (mongo + rabbitmq)" },
+      { name: "apply-pricing", method: "POST", path: "/transactions/apply-pricing", stacks: "messaging (quarkus + rabbitmq)" },
+      { name: "sync-recommendations", method: "POST", path: "/transactions/sync-recommendations", stacks: "messaging (gin + fastapi)" },
+      { name: "customer-lookup", method: "POST", path: "/transactions/customer-lookup", stacks: "search (django + es + memcached)" },
+      { name: "index-document", method: "POST", path: "/transactions/index-document", stacks: "search (indexer + django)" },
+      { name: "ship-order", method: "POST", path: "/transactions/ship-order", stacks: "search (php + es)" },
+      { name: "platform-wide", method: "POST", path: "/transactions/platform-wide", stacks: "all 5 stacks" },
     ],
   });
 });
@@ -186,11 +217,57 @@ app.post("/transactions/fulfill-shipment", (req, res) =>
   }, req, res)
 );
 
+app.post("/transactions/publish-product", (req, res) =>
+  runTransaction("publish-product", async ({ key, value, steps }) => {
+    await messagingStack("publish-product", key, value, steps);
+  }, req, res)
+);
+
+app.post("/transactions/apply-pricing", (req, res) =>
+  runTransaction("apply-pricing", async ({ key, value, steps }) => {
+    await messagingStack("apply-pricing", key, value, steps);
+  }, req, res)
+);
+
+app.post("/transactions/sync-recommendations", (req, res) =>
+  runTransaction("sync-recommendations", async ({ key, value, steps }) => {
+    await messagingStack("sync-recommendations", key, value, steps);
+  }, req, res)
+);
+
+app.post("/transactions/customer-lookup", (req, res) =>
+  runTransaction("customer-lookup", async ({ key, userId, value, steps }) => {
+    await searchStack("customer-lookup", key, userId, value, steps);
+  }, req, res)
+);
+
+app.post("/transactions/index-document", (req, res) =>
+  runTransaction("index-document", async ({ key, userId, value, steps }) => {
+    await searchStack("index-document", key, userId, value, steps);
+  }, req, res)
+);
+
+app.post("/transactions/ship-order", (req, res) =>
+  runTransaction("ship-order", async ({ key, userId, value, steps }) => {
+    await searchStack("ship-order", key, userId, value, steps);
+  }, req, res)
+);
+
+app.post("/transactions/platform-wide", (req, res) =>
+  runTransaction("platform-wide", async ({ key, value, userId, amount, steps }) => {
+    await redisStack(key, value, steps);
+    await kafkaStack(key, value, "platform-wide", steps);
+    await postgresStack(userId, amount, "platform-wide", "platform-wide", steps);
+    await messagingStack("publish-product", key, value, steps);
+    await searchStack("customer-lookup", key, userId, value, steps);
+  }, req, res)
+);
+
 async function startup() {
   await new Promise((r) => setTimeout(r, Number(process.env.STARTUP_DELAY_MS || 5000)));
   await producer.connect();
   ready = true;
-  console.log("stacks-gateway ready — 3 transactions: place-order, sync-catalog, fulfill-shipment");
+  console.log("stacks-gateway ready — 10 transactions across 5 stacks");
 }
 
 app.listen(port, () => console.log(`stacks-gateway on :${port}`));

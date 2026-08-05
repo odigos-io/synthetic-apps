@@ -1,0 +1,280 @@
+# Messaging stack: MongoDB + RabbitMQ + 5 apps (NestJS, FastAPI, Quarkus, Gin)
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7.0
+          ports:
+            - containerPort: 27017
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mongodb
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.13-alpine
+          ports:
+            - containerPort: 5672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: guest
+            - name: RABBITMQ_DEFAULT_PASS
+              value: guest
+          readinessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - port: 5672
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: messaging-gateway
+spec:
+  selector:
+    matchLabels:
+      app: messaging-gateway
+  template:
+    metadata:
+      labels:
+        app: messaging-gateway
+    spec:
+      containers:
+        - name: messaging-gateway
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-messaging-gateway:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: FASTAPI_URL
+              value: http://fastapi-products:8080
+            - name: QUARKUS_URL
+              value: http://quarkus-pricing:8080
+            - name: GIN_URL
+              value: http://gin-recommendations:8080
+            - name: RABBITMQ_URL
+              value: amqp://guest:guest@rabbitmq:5672
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: messaging-gateway
+spec:
+  selector:
+    app: messaging-gateway
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: fastapi-products
+spec:
+  selector:
+    matchLabels:
+      app: fastapi-products
+  template:
+    metadata:
+      labels:
+        app: fastapi-products
+    spec:
+      containers:
+        - name: fastapi-products
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-messaging-fastapi:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongodb:27017
+            - name: QUARKUS_URL
+              value: http://quarkus-pricing:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: fastapi-products
+spec:
+  selector:
+    app: fastapi-products
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: quarkus-pricing
+spec:
+  selector:
+    matchLabels:
+      app: quarkus-pricing
+  template:
+    metadata:
+      labels:
+        app: quarkus-pricing
+    spec:
+      containers:
+        - name: quarkus-pricing
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-messaging-quarkus:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongodb:27017
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: quarkus-pricing
+spec:
+  selector:
+    app: quarkus-pricing
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: gin-recommendations
+spec:
+  selector:
+    matchLabels:
+      app: gin-recommendations
+  template:
+    metadata:
+      labels:
+        app: gin-recommendations
+    spec:
+      containers:
+        - name: gin-recommendations
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-messaging-gin:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongodb:27017
+            - name: FASTAPI_URL
+              value: http://fastapi-products:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: gin-recommendations
+spec:
+  selector:
+    app: gin-recommendations
+  ports:
+    - port: 8080
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: messaging-worker
+spec:
+  selector:
+    matchLabels:
+      app: messaging-worker
+  template:
+    metadata:
+      labels:
+        app: messaging-worker
+    spec:
+      containers:
+        - name: messaging-worker
+          image: ghcr.io/odigos-io/synthetic-apps/stacks-messaging-worker:stacks
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: RABBITMQ_URL
+              value: amqp://guest:guest@rabbitmq:5672
+            - name: FASTAPI_URL
+              value: http://fastapi-products:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: messaging-worker
+spec:
+  selector:
+    app: messaging-worker
+  ports:
+    - port: 8080
