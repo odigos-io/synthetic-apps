@@ -9,6 +9,8 @@ GITHUB_RUN_ID ?=
 GITHUB_REPOSITORY_NAME ?= odigos-enterprise
 DEPOT_ORG_ID ?= p0xd21zf5r
 DEPOT_ODIGOS_ENTERPRISE_REGISTRY_ID ?= w8zkfqwtt3
+DEPOT_ODIGLET_ENTERPRISE_REGISTRY_ID ?= 1wj57h6qh9
+DEPOT_ODIGOS_OSS_REGISTRY_ID ?= 570xmd9kld
 DEPOT_REGISTRY ?= $(DEPOT_ORG_ID).registry.depot.dev
 DEPOT_PULL_SECRET_NAME ?= depot-regcred
 ODIGOS_NAMESPACE ?= odigos-system
@@ -53,8 +55,8 @@ setup-depot-auth:
 		DEPOT_PULL_SECRET_NAME="$(DEPOT_PULL_SECRET_NAME)" \
 		"$(SETUP_DEPOT_AUTH_SCRIPT)" "$(ODIGOS_NAMESPACE)"
 
-# Generate Helm values that override enterprise component images with Depot CI builds.
-# Currently: enterprise-instrumentor + enterprise-ui only.
+# Generate Helm values that override component images with Depot CI builds
+# (enterprise, odiglet, and OSS registries).
 # Usage: make -C tests generate-ci-images-values GITHUB_RUN_ID=1658821493
 generate-ci-images-values:
 	@test -n "$(GITHUB_RUN_ID)" || { \
@@ -65,6 +67,8 @@ generate-ci-images-values:
 	@GITHUB_REPOSITORY_NAME="$(GITHUB_REPOSITORY_NAME)" \
 		DEPOT_ORG_ID="$(DEPOT_ORG_ID)" \
 		DEPOT_ODIGOS_ENTERPRISE_REGISTRY_ID="$(DEPOT_ODIGOS_ENTERPRISE_REGISTRY_ID)" \
+		DEPOT_ODIGLET_ENTERPRISE_REGISTRY_ID="$(DEPOT_ODIGLET_ENTERPRISE_REGISTRY_ID)" \
+		DEPOT_ODIGOS_OSS_REGISTRY_ID="$(DEPOT_ODIGOS_OSS_REGISTRY_ID)" \
 		DEPOT_PULL_SECRET_NAME="$(DEPOT_PULL_SECRET_NAME)" \
 		"$(GENERATE_CI_IMAGES_SCRIPT)" "$(GITHUB_RUN_ID)" "$(CI_IMAGES_VALUES)"
 
@@ -72,7 +76,7 @@ generate-ci-images-values:
 # Usage: make -C tests install-odigos TAG=v1.2.3
 #        make -C tests install-odigos GITHUB_RUN_ID=1658821493
 # With GITHUB_RUN_ID: mints Depot pull secret, generates image overrides for
-# enterprise-instrumentor/ui, and installs (TAG defaults to e2e-test → latest chart).
+# enterprise/odiglet/OSS components, and installs (TAG defaults to e2e-test → latest chart).
 # If TIER is unset: enterprise when ODIGOS_ONPREM_TOKEN is set, otherwise oss.
 install-odigos:
 	@command -v helm >/dev/null 2>&1 || { \

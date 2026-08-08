@@ -3,8 +3,13 @@ description: Set up kind, install Odigos, and run a scenario E2E test
 
 inputs:
   odigos_version:
-    description: 'Odigos version to install (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)'
-    required: true
+    description: 'Odigos chart version to install (e.g. v1.29.2). Optional when github_run_id is set (installs latest chart).'
+    required: false
+    default: ''
+  github_run_id:
+    description: 'odigos-enterprise CI run id; when set, overrides enterprise/odiglet/OSS component images from Depot'
+    required: false
+    default: ''
   scenario:
     description: 'Scenario to test'
     required: true
@@ -42,11 +47,37 @@ runs:
       env:
         ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI: ${{ env.ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI }}
       run: |
+        ODIGOS_VERSION="${{ inputs.odigos_version }}"
+        GITHUB_RUN_ID="${{ inputs.github_run_id }}"
+
+        if [[ -z "${ODIGOS_VERSION}" && -z "${GITHUB_RUN_ID}" ]]; then
+          echo "Error: provide odigos_version and/or github_run_id" >&2
+          exit 1
+        fi
+
         if [[ "${{ inputs.tier }}" == "enterprise" ]]; then
           export ODIGOS_ONPREM_TOKEN="$ODIGOS_TOKEN_SYNTHTIC_APPS_TESTS_CI"
         fi
+
+        HELM_VALUES_FILE=""
+        if [[ -n "${GITHUB_RUN_ID}" ]]; then
+          chmod +x tests/generate-odigos-ci-images-values.sh
+          HELM_VALUES_FILE="tests/odigos-ci-images.values.yaml"
+          # Auth / imagePullSecrets intentionally skipped for now.
+          INCLUDE_IMAGE_PULL_SECRETS=false \
+            tests/generate-odigos-ci-images-values.sh "${GITHUB_RUN_ID}" "${HELM_VALUES_FILE}"
+          if [[ -z "${ODIGOS_VERSION}" ]]; then
+            ODIGOS_VERSION="e2e-test"
+          fi
+        fi
+
         chmod +x .github/scripts/install-odigos-helm.sh
-        .github/scripts/install-odigos-helm.sh "${{ inputs.odigos_version }}" "${{ inputs.tier }}"
+        if [[ -n "${HELM_VALUES_FILE}" ]]; then
+          HELM_VALUES_FILE="${HELM_VALUES_FILE}" \
+            .github/scripts/install-odigos-helm.sh "${ODIGOS_VERSION}" "${{ inputs.tier }}"
+        else
+          .github/scripts/install-odigos-helm.sh "${ODIGOS_VERSION}" "${{ inputs.tier }}"
+        fi
 
     - name: Wait for Odigos to be ready
       shell: bash

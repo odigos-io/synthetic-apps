@@ -4,9 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       odigos_version:
-        description: 'Odigos version to install (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)'
-        required: true
+        description: 'Odigos chart version (optional when github_run_id is set; e.g. v1.29.2)'
+        required: false
         type: string
+        default: ''
+      github_run_id:
+        description: 'odigos-enterprise CI run id — overrides enterprise/odiglet/OSS component images from Depot'
+        required: false
+        type: string
+        default: ''
       scenario:
         description: 'Scenario to test'
         required: true
@@ -69,6 +75,7 @@ jobs:
       - uses: ./.github/actions/odigos-scenario-e2e
         with:
           odigos_version: ${{ inputs.odigos_version }}
+          github_run_id: ${{ inputs.github_run_id }}
           scenario: ${{ inputs.scenario }}
           languages: ${{ matrix.language }}
           tier: ${{ inputs.tier }}
