@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${1:?Odigos version is required (e.g. v1.29.2 or 1.30.0-pre2 or 1.31.0-rc1)}"
+# Version is optional. Empty / e2e-test / 0.0.0-e2e-test → install latest chart
+# (typical when component images come from a Depot CI run via HELM_VALUES_FILE).
+VERSION="${1:-}"
 TIER="${2:-enterprise}"
 VERSION="${VERSION#v}"
 
@@ -34,11 +36,34 @@ if [[ "${TIER}" == "enterprise" ]]; then
   HELM_SET_ARGS+=(--set "onPremToken=${ODIGOS_ONPREM_TOKEN}")
 fi
 
-echo "Installing Odigos ${TIER} chart version ${VERSION} (kind-friendly gateway sizing)..."
-helm upgrade --install odigos odigos/odigos \
-  --version "${VERSION}" \
-  --namespace odigos-system \
-  --create-namespace \
-  "${HELM_SET_ARGS[@]}" \
-  --wait \
-  --timeout 2m
+if [[ -n "${HELM_VALUES_FILE:-}" ]]; then
+  if [[ ! -f "${HELM_VALUES_FILE}" ]]; then
+    echo "HELM_VALUES_FILE does not exist: ${HELM_VALUES_FILE}" >&2
+    exit 1
+  fi
+  echo "Using Helm values override: ${HELM_VALUES_FILE}"
+fi
+
+case "${VERSION}" in
+  ""|e2e-test|0.0.0-e2e-test)
+    echo "Installing Odigos ${TIER} chart (latest; mock/CI tag '${VERSION:-<empty>}')..."
+    helm upgrade --install odigos odigos/odigos \
+      --namespace odigos-system \
+      --create-namespace \
+      "${HELM_SET_ARGS[@]}" \
+      ${HELM_VALUES_FILE:+-f "${HELM_VALUES_FILE}"} \
+      --wait \
+      --timeout 2m
+    ;;
+  *)
+    echo "Installing Odigos ${TIER} chart version ${VERSION}..."
+    helm upgrade --install odigos odigos/odigos \
+      --version "${VERSION}" \
+      --namespace odigos-system \
+      --create-namespace \
+      "${HELM_SET_ARGS[@]}" \
+      ${HELM_VALUES_FILE:+-f "${HELM_VALUES_FILE}"} \
+      --wait \
+      --timeout 2m
+    ;;
+esac

@@ -3,3 +3,4 @@ bin/
 pubsub-synthetic-key.json
 scenarios/tail-sampling/test/.trace-sampling-metrics-baseline*.json.tmp
 scenarios/tail-sampling/test/.trace-sampling-metrics-baseline*.json
+tests/odigos-ci-images.values.yaml
