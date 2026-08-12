@@ -25,7 +25,7 @@ async Task<List<object>> CallDownstream(HttpContext ctx, string name, Func<Task<
     return await fn();
 }
 
-app.MapPost("/transactions/customer-lookup", async (CustomerReq req, HttpContext ctx, IHttpClientFactory _) =>
+app.MapPost("/transactions/customer-lookup", async (CustomerReq req, HttpContext ctx) =>
 {
     var http = new HttpClient();
     var steps = new List<object>();
