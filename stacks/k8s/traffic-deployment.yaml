@@ -16,7 +16,6 @@ spec:
       labels:
         app: stacks-traffic
     spec:
-      activeDeadlineSeconds: 3700
       containers:
         - name: curl
           image: curlimages/curl:8.4.0
