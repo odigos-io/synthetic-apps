@@ -1,0 +1,43 @@
+# Attack traffic: malformed / out-of-profile arguments that should trip the
+# Insights D4 (arguments / return values) scorer AFTER the baseline has promoted.
+# Trigger with: make trigger-attack (from java/custom-instrumentation-args)
+#
+# Expected findings on the Insights anomaly page:
+#   - getUser id="1 OR 1=1"        -> D4 argument format violation (numeric -> freeform)
+#                                     + "Injection-like argument / return" enricher (SQLi)
+#   - getUser id="../../etc/passwd" -> D4 argument format violation (numeric -> path)
+#                                     + injection enricher (path traversal)
+#   - checkRole role="superadmin"   -> D4 argument enum violation (outside {user,admin,guest})
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: custom-instrumentation-args-attack
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: custom-instrumentation-args-attack
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              BASE_URL="http://custom-instrumentation-args:8080"
+              echo "SQLi-shaped id"
+              curl -sS -G "$${BASE_URL}/user" --data-urlencode "id=1 OR 1=1"
+              echo
+              echo "path-traversal-shaped id"
+              curl -sS -G "$${BASE_URL}/user" --data-urlencode "id=../../etc/passwd"
+              echo
+              echo "privilege-escalation role"
+              curl -sS -f "$${BASE_URL}/authorize?role=superadmin"
+              echo
+              echo "attack traffic sent"
