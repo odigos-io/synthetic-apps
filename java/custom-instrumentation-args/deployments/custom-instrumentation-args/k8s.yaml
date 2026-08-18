@@ -1,0 +1,48 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: custom-instrumentation-args
+  labels:
+    app: custom-instrumentation-args
+spec:
+  selector:
+    matchLabels:
+      app: custom-instrumentation-args
+  template:
+    metadata:
+      labels:
+        app: custom-instrumentation-args
+    spec:
+      containers:
+        - name: custom-instrumentation-args
+          image: ghcr.io/odigos-io/synthetic-apps/java-custom-instrumentation-args:custom-instrumentation
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: custom-instrumentation-args
+spec:
+  selector:
+    app: custom-instrumentation-args
+  ports:
+    - protocol: TCP
+      port: 8080

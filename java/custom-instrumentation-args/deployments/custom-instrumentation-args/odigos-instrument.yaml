@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-custom-instrumentation-args
+  namespace: java-custom-instrumentation-args
+spec:
+  workload:
+    kind: Deployment
+    name: custom-instrumentation-args
+    namespace: java-custom-instrumentation-args

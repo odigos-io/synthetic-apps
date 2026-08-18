@@ -1,0 +1,29 @@
+apiVersion: odigos.io/v1alpha1
+kind: InstrumentationRule
+metadata:
+  name: custom-instrumentation-args
+  namespace: odigos-system
+spec:
+  ruleName: Instrument UserService.getUser and AuthorizationService.checkRole
+  notes: >-
+    Java eBPF custom instrumentation for the java-custom-instrumentation-args
+    synthetic app. Probing these two methods makes each call a span that carries
+    the probed site (code.namespace / code.function) plus the captured
+    argument (arg.0) and return value (return.value). Those attributes are the
+    input for the Insights D4 (arguments / return values) scorer.
+  scopes:
+    languages:
+      - java
+    sources:
+      - kind: Deployment
+        name: custom-instrumentation-args
+        namespace: java-custom-instrumentation-args
+  codeAttributes:
+    function: true
+    namespace: true
+  customInstrumentations:
+    java:
+      - className: com.synthetic.custominst.UserService
+        methodName: getUser
+      - className: com.synthetic.custominst.AuthorizationService
+        methodName: checkRole
