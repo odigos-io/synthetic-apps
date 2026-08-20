@@ -1,0 +1,23 @@
+# Built-in OTLP gRPC destination with client mTLS.
+# Secret otlp-mtls-certs must already exist in this namespace (created by scripts/setup.sh).
+apiVersion: odigos.io/v1alpha1
+kind: Destination
+metadata:
+  name: otlp-mtls
+  namespace: __ODIGOS_NS__
+spec:
+  type: otlp
+  destinationName: otlp-mtls
+  secretRef:
+    name: otlp-mtls-certs
+  signals:
+    - TRACES
+    - METRICS
+    - LOGS
+  data:
+    OTLP_GRPC_ENDPOINT: mtls-otlp-receiver.__NAMESPACE__:4317
+    OTLP_GRPC_TLS_ENABLED: "true"
+    OTLP_GRPC_MTLS_ENABLED: "true"
+    OTLP_GRPC_COMPRESSION: none
+    OTLP_GRPC_CA_PEM: |
+__CA_PEM__

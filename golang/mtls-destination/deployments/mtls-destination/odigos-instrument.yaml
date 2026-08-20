@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-mtls-destination
+  namespace: golang-mtls-destination
+spec:
+  workload:
+    kind: Deployment
+    name: mtls-destination
+    namespace: golang-mtls-destination

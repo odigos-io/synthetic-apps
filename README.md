@@ -39,5 +39,6 @@ synthetic applications used for testing, developing and evaluating odigos
 - `versionlatest`: The latest version of Go (1.24.5).
 - `versionminimum`: The minimum version of Go odigos supports (1.17.1).
 - `versionunsupported`: An unsupported version of Go (1.16).
+- `mtls-destination`: Go HTTP app plus in-cluster mTLS OTLP receiver for testing gateway client mTLS destinations (`golang/mtls-destination`).
 
 > **Note:** Go 1.17.1 is used as the minimum version instead of 1.17.0 due to a bug in 1.17.0 that prevents odigos from detecting the correct version.
