@@ -1,0 +1,7 @@
+# Local-only generated artifacts (certs, rendered Destination YAMLs)
+.generated/
+
+.DS_Store
+*.log
+*.swp
+*~

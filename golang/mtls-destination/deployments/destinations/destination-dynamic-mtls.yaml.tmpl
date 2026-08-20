@@ -1,0 +1,25 @@
+# Dynamic destination with ${ENV} PEM placeholders + secretRef.
+# Secret otlp-mtls-dynamic-certs must already exist (created by scripts/setup.sh).
+apiVersion: odigos.io/v1alpha1
+kind: Destination
+metadata:
+  name: otlp-mtls-dynamic
+  namespace: __ODIGOS_NS__
+spec:
+  type: dynamic
+  destinationName: otlp-mtls
+  secretRef:
+    name: otlp-mtls-dynamic-certs
+  signals:
+    - TRACES
+    - METRICS
+    - LOGS
+  data:
+    DYNAMIC_DESTINATION_TYPE: otlp
+    DYNAMIC_CONFIGURATION_DATA: |
+      endpoint: mtls-otlp-receiver.__NAMESPACE__:4317
+      tls:
+        insecure: false
+        ca_pem: ${OTLP_CA_PEM}
+        cert_pem: ${OTLP_CLIENT_CERT_PEM}
+        key_pem: ${OTLP_CLIENT_KEY_PEM}

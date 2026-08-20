@@ -1,0 +1,28 @@
+# Trigger with: make trigger-curls (from golang/mtls-destination)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mtls-destination-curls
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: mtls-destination-curls
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curls
+          image: curlimages/curl:8.5.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              BASE_URL="http://mtls-destination:8080"
+              echo "hitting ${BASE_URL}/work"
+              for i in $(seq 1 20); do
+                curl -sf "${BASE_URL}/work" || exit 1
+                sleep 0.2
+              done
+              echo "done"

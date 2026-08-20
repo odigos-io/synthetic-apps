@@ -1,0 +1,49 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mtls-destination
+  labels:
+    app: mtls-destination
+spec:
+  selector:
+    matchLabels:
+      app: mtls-destination
+  template:
+    metadata:
+      labels:
+        app: mtls-destination
+    spec:
+      containers:
+        - name: mtls-destination
+          image: ghcr.io/odigos-io/synthetic-apps/golang-mtls-destination:mtls-destination
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mtls-destination
+spec:
+  selector:
+    app: mtls-destination
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
