@@ -42,3 +42,14 @@ synthetic applications used for testing, developing and evaluating odigos
 - `mtls-destination`: Go HTTP app plus in-cluster mTLS OTLP receiver for testing gateway client mTLS destinations (`golang/mtls-destination`).
 
 > **Note:** Go 1.17.1 is used as the minimum version instead of 1.17.0 due to a bug in 1.17.0 that prevents odigos from detecting the correct version.
+
+### Ruby HTTPServer
+
+- `httpserver`: A simple HTTP server application written in Ruby (stdlib `TCPServer`).
+- `versionminimum`: The minimum version of Ruby odigos supports (3.1.0).
+- `versionunsupported`: An unsupported version of Ruby (3.0.0).
+- `versionveryold`: A very old version of Ruby (2.7.8).
+
+> **Note:** The app uses only the Ruby standard library, so the same source runs on every variant. `webrick` is not used because it was removed from the standard library in Ruby 3.0. Each deployment serves HTTP on port 8080 and also issues periodic outbound requests to its own Service, so both in-process and network level instrumentation have traffic to report.
+
+> **Note:** Debian based images are used instead of alpine, because the Odigos Ruby agent ships a single gem bundle with no musl build.
