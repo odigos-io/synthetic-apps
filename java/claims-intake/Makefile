@@ -11,6 +11,9 @@ CH_CLIENT = kubectl exec -n $(ODIGOS_NAMESPACE) deploy/odigos-insights-clickhous
 	--password "$$(kubectl get secret odigos-insights-clickhouse -n $(ODIGOS_NAMESPACE) -o jsonpath='{.data.password}' | base64 -d)" \
 	-d interrogation
 
+# Interrogation call tries live in Redis DB 1 of the shared odigos-cache.
+REDIS_CLIENT = kubectl exec -n $(ODIGOS_NAMESPACE) deploy/odigos-cache -- redis-cli -n 1
+
 RUNS_SQL = SELECT r.Timestamp AS at, t.RootSpanName AS transaction, r.ApplyStatus AS status, \
 	JSONExtractString(rec, 'category') AS category, JSONExtractString(rec, 'function') AS function, \
 	JSONExtractString(rec, 'why') AS why, r.Error AS error \
@@ -82,10 +85,15 @@ probes-yaml:
 runs:
 	$(CH_CLIENT) --query "$(RUNS_SQL)"
 
-# Forgets past analyses and generated probes, then restarts the app so the Java
-# agent drops already-instrumented methods. The next loop tick re-analyzes from scratch.
+# Forgets generated probes, past analyses and the learned call tries, then restarts
+# the app so the Java agent drops already-instrumented methods. Interrogation re-learns
+# from live traffic, so the first probes land again after about 5 minutes.
+# Redis is cleared before ClickHouse so the trie flusher can't copy old nodes back.
+# Trie keys are <prefix><namespace>\x1f...; '?' matches the \x1f separator.
 reset-probes:
 	kubectl delete instrumentationrule $(RULE_NAME) -n $(ODIGOS_NAMESPACE) --ignore-not-found=true
+	@echo "deleted Redis call tries: $$($(REDIS_CLIENT) EVAL "local ks = redis.call('KEYS', ARGV[1]) for _, k in ipairs(ks) do redis.call('DEL', k) end return #ks" 0 'odigos:interrogation:trie:$(K8S_NAMESPACE)?*')"
+	$(CH_CLIENT) --query "ALTER TABLE tx_call_trie_structure DELETE WHERE Namespace = '$(K8S_NAMESPACE)' SETTINGS mutations_sync = 1"
 	$(CH_CLIENT) --query "ALTER TABLE tx_runs DELETE WHERE Namespace = '$(K8S_NAMESPACE)' SETTINGS mutations_sync = 1"
 	$(MAKE) rollout
 
