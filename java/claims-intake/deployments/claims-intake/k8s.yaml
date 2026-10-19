@@ -1,0 +1,57 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: claims-intake
+  labels:
+    app: claims-intake
+spec:
+  selector:
+    matchLabels:
+      app: claims-intake
+  template:
+    metadata:
+      labels:
+        app: claims-intake
+    spec:
+      containers:
+        - name: claims-intake
+          image: ghcr.io/odigos-io/synthetic-apps/java-claims-intake:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: FRAUD_RING_DETECTION
+              value: "false"
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 500m
+              memory: 384Mi
+            limits:
+              memory: 768Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: claims-intake
+spec:
+  selector:
+    app: claims-intake
+  ports:
+    - protocol: TCP
+      port: 8080

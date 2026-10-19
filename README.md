@@ -20,6 +20,7 @@ synthetic applications used for testing, developing and evaluating odigos
 - `versionminimum`: The minimum version of Java supported by the build system.
 - `envdockerfile`: Set JAVA options in Dockerfile.
 - `envmanifest`: Set JAVA options in manifest.
+- `claims-intake`: Spring Boot insurance claims service with a demo story for interrogation (AI-chosen custom probes across observability, security and performance), plus a load generator and a runtime "release" toggle that adds a new code path (`java/claims-intake`).
 
 > **Note:** Java 8, released in 2014, is the minimum version supported by OpenTelemetry. Creating applications with older Java versions is not practical or supported, so only Java 8 and newer are included here.
 

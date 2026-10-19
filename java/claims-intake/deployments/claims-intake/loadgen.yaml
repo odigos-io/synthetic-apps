@@ -1,0 +1,80 @@
+# Partner-portal traffic: 60% POST /claims, 30% GET /claims/{id}, 10% POST /claims/{id}/approve.
+# Values follow a fixed rotation rather than $RANDOM so runs are repeatable. Tenants
+# are derived the same way the app seeds them (record n belongs to tenant n % 3),
+# so tenant isolation checks pass. About 4% of submissions hit a lapsed policy and
+# return 422, which is expected.
+# Rate is roughly RATE requests per second (sequential; slow responses lower it).
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: claims-intake-loadgen
+  labels:
+    app: claims-intake-loadgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claims-intake-loadgen
+  template:
+    metadata:
+      labels:
+        app: claims-intake-loadgen
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: curl
+          image: curlimages/curl:8.4.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BASE_URL
+              value: http://claims-intake:8080
+            - name: RATE
+              value: "10"
+            - name: TOKEN
+              value: demo-partner-portal-token
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -u
+              tenant() {
+                case $$(($$1 % 3)) in
+                  0) echo acme-logistics ;;
+                  1) echo brightside-health ;;
+                  *) echo coastal-fleet ;;
+                esac
+              }
+              until curl -sf "${BASE_URL}/health" >/dev/null; do sleep 2; done
+              pause=$$(awk "BEGIN { printf \"%.3f\", 1 / ${RATE} }")
+              i=0
+              while true; do
+                slot=$$((i % 10))
+                if [ "$${slot}" -lt 6 ]; then
+                  p=$$(((i * 7) % 200))
+                  amount=$$((25000 + (i * 7919) % 900000))
+                  attachments=$$((i % 9))
+                  if [ $$((i % 2)) -eq 0 ]; then category=AUTO; else category=PROPERTY; fi
+                  ssn=$$(printf "%03d-%02d-%04d" $$((100 + i % 800)) $$((10 + i % 89)) $$((i % 10000)))
+                  curl -s -o /dev/null -X POST "${BASE_URL}/claims" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "X-Tenant-Id: $$(tenant $${p})" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"policyNumber\":\"POL-$$((1000 + p))\",\"claimantSsn\":\"$${ssn}\",\"amountCents\":$${amount},\"category\":\"$${category}\",\"attachments\":$${attachments},\"description\":\"demo claim $${i}\"}" \
+                    || true
+                elif [ "$${slot}" -lt 9 ]; then
+                  n=$$((1 + (i * 13) % 300))
+                  curl -s -o /dev/null "${BASE_URL}/claims/CLM-$${n}" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "X-Tenant-Id: $$(tenant $${n})" \
+                    || true
+                else
+                  n=$$((1 + (i * 29) % 300))
+                  if [ $$((i % 20)) -lt 10 ]; then adjuster=senior-ana; else adjuster=adj-ben; fi
+                  curl -s -o /dev/null -X POST "${BASE_URL}/claims/CLM-$${n}/approve" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "X-Tenant-Id: $$(tenant $${n})" \
+                    -H "X-Adjuster-Id: $${adjuster}" \
+                    || true
+                fi
+                i=$$((i + 1))
+                sleep "${pause}"
+              done
