@@ -1,0 +1,10 @@
+apiVersion: odigos.io/v1alpha1
+kind: Source
+metadata:
+  name: instrument-claims-intake
+  namespace: claims-demo
+spec:
+  workload:
+    kind: Deployment
+    name: claims-intake
+    namespace: claims-demo
